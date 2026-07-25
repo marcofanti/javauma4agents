@@ -1,0 +1,205 @@
+[
+  {
+    "value": {},
+    "sorted": "{}",
+    "compact": "{}"
+  },
+  {
+    "value": [],
+    "sorted": "[]",
+    "compact": "[]"
+  },
+  {
+    "value": null,
+    "sorted": "null",
+    "compact": "null"
+  },
+  {
+    "value": true,
+    "sorted": "true",
+    "compact": "true"
+  },
+  {
+    "value": false,
+    "sorted": "false",
+    "compact": "false"
+  },
+  {
+    "value": "hello",
+    "sorted": "\"hello\"",
+    "compact": "\"hello\""
+  },
+  {
+    "value": "quote\"back\\slash",
+    "sorted": "\"quote\\\"back\\\\slash\"",
+    "compact": "\"quote\\\"back\\\\slash\""
+  },
+  {
+    "value": "control\t\n\r\b\f\u0001",
+    "sorted": "\"control\\t\\n\\r\\b\\f\\u0001\"",
+    "compact": "\"control\\t\\n\\r\\b\\f\\u0001\""
+  },
+  {
+    "value": "unicode: caf\u00e9 \u65e5\u672c\u8a9e \ud83d\ude00 \ue001",
+    "sorted": "\"unicode: caf\\u00e9 \\u65e5\\u672c\\u8a9e \\ud83d\\ude00 \\ue001\"",
+    "compact": "\"unicode: caf\\u00e9 \\u65e5\\u672c\\u8a9e \\ud83d\\ude00 \\ue001\""
+  },
+  {
+    "value": 0,
+    "sorted": "0",
+    "compact": "0"
+  },
+  {
+    "value": -1,
+    "sorted": "-1",
+    "compact": "-1"
+  },
+  {
+    "value": 1234567890123456789,
+    "sorted": "1234567890123456789",
+    "compact": "1234567890123456789"
+  },
+  {
+    "value": 1000000000000000000000000000000,
+    "sorted": "1000000000000000000000000000000",
+    "compact": "1000000000000000000000000000000"
+  },
+  {
+    "value": 1.0,
+    "sorted": "1.0",
+    "compact": "1.0"
+  },
+  {
+    "value": -1.5,
+    "sorted": "-1.5",
+    "compact": "-1.5"
+  },
+  {
+    "value": 0.1,
+    "sorted": "0.1",
+    "compact": "0.1"
+  },
+  {
+    "value": 1000000000000000.0,
+    "sorted": "1000000000000000.0",
+    "compact": "1000000000000000.0"
+  },
+  {
+    "value": 1e+16,
+    "sorted": "1e+16",
+    "compact": "1e+16"
+  },
+  {
+    "value": 0.0001,
+    "sorted": "0.0001",
+    "compact": "0.0001"
+  },
+  {
+    "value": 1e-05,
+    "sorted": "1e-05",
+    "compact": "1e-05"
+  },
+  {
+    "value": -2.5e-05,
+    "sorted": "-2.5e-05",
+    "compact": "-2.5e-05"
+  },
+  {
+    "value": 9999999999999998.0,
+    "sorted": "9999999999999998.0",
+    "compact": "9999999999999998.0"
+  },
+  {
+    "value": 3.141592653589793,
+    "sorted": "3.141592653589793",
+    "compact": "3.141592653589793"
+  },
+  {
+    "value": 2.5e-10,
+    "sorted": "2.5e-10",
+    "compact": "2.5e-10"
+  },
+  {
+    "value": 1.7976931348623157e+308,
+    "sorted": "1.7976931348623157e+308",
+    "compact": "1.7976931348623157e+308"
+  },
+  {
+    "value": 5e-324,
+    "sorted": "5e-324",
+    "compact": "5e-324"
+  },
+  {
+    "value": {
+      "b": 1,
+      "a": 2,
+      "A": 3,
+      "_": 4,
+      "0": 5
+    },
+    "sorted": "{\"0\": 5, \"A\": 3, \"_\": 4, \"a\": 2, \"b\": 1}",
+    "compact": "{\"0\":5,\"A\":3,\"_\":4,\"a\":2,\"b\":1}"
+  },
+  {
+    "value": {
+      "symbol": "VTI",
+      "side": "sell",
+      "quantity": 40
+    },
+    "sorted": "{\"quantity\": 40, \"side\": \"sell\", \"symbol\": \"VTI\"}",
+    "compact": "{\"quantity\":40,\"side\":\"sell\",\"symbol\":\"VTI\"}"
+  },
+  {
+    "value": {
+      "nested": {
+        "z": [
+          1,
+          2,
+          {
+            "y": null
+          }
+        ],
+        "a": {
+          "deep": [
+            true,
+            false,
+            1.5
+          ]
+        }
+      }
+    },
+    "sorted": "{\"nested\": {\"a\": {\"deep\": [true, false, 1.5]}, \"z\": [1, 2, {\"y\": null}]}}",
+    "compact": "{\"nested\":{\"a\":{\"deep\":[true,false,1.5]},\"z\":[1,2,{\"y\":null}]}}"
+  },
+  {
+    "value": {
+      "caf\u00e9": "\u00fcber",
+      "\u65e5\u672c": [
+        "\ud83d\ude00"
+      ]
+    },
+    "sorted": "{\"caf\\u00e9\": \"\\u00fcber\", \"\\u65e5\\u672c\": [\"\\ud83d\\ude00\"]}",
+    "compact": "{\"caf\\u00e9\":\"\\u00fcber\",\"\\u65e5\\u672c\":[\"\\ud83d\\ude00\"]}"
+  },
+  {
+    "value": [
+      "mixed",
+      1,
+      2.0,
+      null,
+      true,
+      {
+        "k": []
+      }
+    ],
+    "sorted": "[\"mixed\", 1, 2.0, null, true, {\"k\": []}]",
+    "compact": "[\"mixed\",1,2.0,null,true,{\"k\":[]}]"
+  },
+  {
+    "value": {
+      "account": "brokerage-main"
+    },
+    "sorted": "{\"account\": \"brokerage-main\"}",
+    "compact": "{\"account\":\"brokerage-main\"}"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "jwk": {
+    "x": "3Fi-yGA2GL4vVf-SopXSMfgRJoq-Q0wn9i58WfBpnZg",
+    "kty": "OKP",
+    "crv": "Ed25519"
+  },
+  "thumbprint": "jkt:s_qSnPrifMYQgGw8YPoVeSkX4n5GrXVU7IwGmCmpS44",
+  "canonical": "{\"crv\":\"Ed25519\",\"kty\":\"OKP\",\"x\":\"3Fi-yGA2GL4vVf-SopXSMfgRJoq-Q0wn9i58WfBpnZg\"}"
+}

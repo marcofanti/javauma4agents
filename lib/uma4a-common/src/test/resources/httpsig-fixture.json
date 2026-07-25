@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "authority": "gateway.uma.lab",
+  "path": "/mcp",
+  "authorization": "PoP fake.rpt.token",
+  "keyid": "agent-req-1",
+  "created": 1784983802,
+  "signature_input": "sig1=(\"@method\" \"@authority\" \"@path\" \"authorization\");created=1784983802;keyid=\"agent-req-1\";alg=\"ed25519\"",
+  "signature": "sig1=:hAskTnHoG0NPUcew+dDlPhiOUPync1DFFiUVerCR0d39C0nwb0+c9EY9SCzrg33OGDbICY4kB1lqiTeY/St4BA==:",
+  "raw_public_b64url": "3Fi-yGA2GL4vVf-SopXSMfgRJoq-Q0wn9i58WfBpnZg"
+}

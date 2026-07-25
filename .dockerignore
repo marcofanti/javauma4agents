@@ -1,0 +1,7 @@
+.git
+**/target
+screenshots
+docs
+aauth/upstream
+certs
+*.md
