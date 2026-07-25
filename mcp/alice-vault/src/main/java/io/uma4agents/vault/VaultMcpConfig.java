@@ -1,8 +1,9 @@
 package io.uma4agents.vault;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
@@ -34,7 +35,7 @@ public class VaultMcpConfig {
              "required":["symbol","side","quantity"]}""";
 
     @Bean
-    public McpJsonMapper mcpJsonMapper(ObjectMapper mapper) {
+    public McpJsonMapper mcpJsonMapper(JsonMapper mapper) {
         return new JacksonMcpJsonMapper(mapper);
     }
 
@@ -80,7 +81,7 @@ public class VaultMcpConfig {
             java.util.function.BiFunction<Object, McpSchema.CallToolRequest, CallToolResult> handler) {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder().name(name).description(description).inputSchema(
-                        new JacksonMcpJsonMapper(new ObjectMapper()), schema).build())
+                        new JacksonMcpJsonMapper(JsonMapper.builder().build()), schema).build())
                 .callHandler((exchange, request) -> handler.apply(exchange, request))
                 .build();
     }
@@ -90,7 +91,7 @@ public class VaultMcpConfig {
             return CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(mapper.writeValueAsString(value))))
                     .build();
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new IllegalStateException("unserializable tool result", e);
         }
     }

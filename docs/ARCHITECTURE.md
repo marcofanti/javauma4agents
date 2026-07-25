@@ -44,14 +44,14 @@ The gateway and the grant loop exist for the second case.
 
 | Service | Role | Language / base |
 |---|---|---|
-| `uma-as` | Alice's authorization server: the four-beat grant loop, tiered policy, ticket lifecycle, RPT issuance, connections, ledger, owner API, SSE | Java 21 / Spring Boot |
-| `uma-pep` | Policy-enforcement point behind the gateway: challenges, RPT introspection, proof-of-possession verification, tool→resource scoping, single-use operation binding | Java 21 / Spring Boot |
+| `uma-as` | Alice's authorization server: the four-beat grant loop, tiered policy, ticket lifecycle, RPT issuance, connections, ledger, owner API, SSE | Java 25 / Spring Boot |
+| `uma-pep` | Policy-enforcement point behind the gateway: challenges, RPT introspection, proof-of-possession verification, tool→resource scoping, single-use operation binding | Java 25 / Spring Boot |
 | `agentgateway` | The MCP gateway/PEP host; delegates authz to `uma-pep` via HTTP ext_authz | Solo.io agentgateway |
-| `alice-vault-mcp` | Alice's brokerage vault as an MCP server (fixture data); unaware it is protected | Java 21 / MCP Java SDK |
-| `alice-portal` | Meridian Wealth: dashboard, holdings, trade, and Settings → Security → Agent Authorization | Java 21 / Spring Boot + vanilla SPA |
+| `alice-vault-mcp` | Alice's brokerage vault as an MCP server (fixture data); unaware it is protected | Java 25 / MCP Java SDK |
+| `alice-portal` | Meridian Wealth: dashboard, holdings, trade, and Settings → Security → Agent Authorization | Java 25 / Spring Boot + vanilla SPA |
 | `keycloak` | Alice's identity provider and OIDC login for the portal | Keycloak |
 | `person-server` | AAuth Person/Agent server — the agent-identity component for the identified-level path (the demo default signs pseudonymously) | upstream (pinned) |
-| `agent-shim` | Local proxy that lets an unmodified MCP client be the requesting agent | Java 21 / MCP Java SDK |
+| `agent-shim` | Local proxy that lets an unmodified MCP client be the requesting agent | Java 25 / MCP Java SDK |
 | observability | Grafana + Loki + Promtail; one structured event per protocol step, ticket = correlation id | Grafana stack |
 
 Shared code in `lib/`: `uma4a-common` (canonical JSON matching CPython's

@@ -1,7 +1,7 @@
 package io.uma4agents.agent;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import io.uma4agents.common.Jwks;
 import java.io.IOException;
 import java.net.URI;
@@ -51,7 +51,7 @@ public final class EnrollClient {
         String body;
         try {
             body = MAPPER.writeValueAsString(registration);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new EnrollmentDeniedException("unserializable registration: " + e.getMessage());
         }
 
@@ -150,7 +150,7 @@ public final class EnrollClient {
     private static Map<String, Object> parse(String json) {
         try {
             return MAPPER.readValue(json, new TypeReference<>() {});
-        } catch (IOException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new EnrollmentDeniedException("non-JSON response: " + truncate(json));
         }
     }

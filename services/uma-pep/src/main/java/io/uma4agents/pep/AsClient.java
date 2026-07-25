@@ -1,7 +1,7 @@
 package io.uma4agents.pep;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -179,7 +179,7 @@ public class AsClient {
                     .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(body)))
                     .build();
             return send(request);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new IllegalStateException("unserializable request body", e);
         }
     }
@@ -198,7 +198,7 @@ public class AsClient {
     private static Map<String, Object> parse(String json) {
         try {
             return MAPPER.readValue(json, new TypeReference<>() {});
-        } catch (IOException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new IllegalStateException("non-JSON response from AS", e);
         }
     }

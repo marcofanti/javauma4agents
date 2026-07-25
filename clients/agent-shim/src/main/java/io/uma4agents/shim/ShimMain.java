@@ -1,8 +1,9 @@
 package io.uma4agents.shim;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
  */
 public final class ShimMain {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     private final String gateway = env("UMA4A_GATEWAY", "https://gateway.uma.lab/mcp");
     private final String cacert = env("UMA4A_CACERT", "certs/rootCA.pem");

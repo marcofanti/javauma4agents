@@ -1,7 +1,7 @@
 package io.uma4agents.driver;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -67,7 +67,7 @@ final class McpSession {
             } else if (!response.body().isEmpty()) {
                 try {
                     payload = MAPPER.readValue(response.body(), new TypeReference<>() {});
-                } catch (IOException e) {
+                } catch (tools.jackson.core.JacksonException e) {
                     throw new IllegalStateException("non-JSON response ("
                             + response.statusCode() + "): "
                             + response.body().substring(0, Math.min(200, response.body().length())));

@@ -1,7 +1,7 @@
 package io.uma4agents.pep;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import io.uma4agents.common.HttpSignature;
 import io.uma4agents.common.Jwks;
 import io.uma4agents.common.PyJson;
@@ -185,7 +185,7 @@ public class CheckController {
         Map<String, Object> msg;
         try {
             msg = MAPPER.readValue(body, new TypeReference<>() {});
-        } catch (IOException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             return new Object[] {null, null, null};
         }
         Object method = msg.get("method");

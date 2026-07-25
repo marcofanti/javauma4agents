@@ -10,7 +10,7 @@ cases, and with a tap for the sensitive ones.
 
 The custom services (`uma-as`, `uma-pep`, `alice-portal`, `alice-vault-mcp`)
 and the agent-side clients (grant loop, demo driver, agent shim) are Spring
-Boot 3 / Java 21 in a multi-module Maven build (`lib/uma4a-common`,
+Boot 4 / Java 25 in a multi-module Maven build (`lib/uma4a-common`,
 `lib/uma4a-agent`, `services/*`, `mcp/*`, `clients/*`), wire-compatible with
 the Python reference: hostnames, ports, env vars, JSON payloads, JWT shapes,
 and the RFC 9421 signing profile are identical. Third-party infrastructure
@@ -110,7 +110,7 @@ MCP server) handles agent identity, request signing, and the grant negotiation
 
 ## Building locally (optional)
 
-Docker builds everything; for local development you need JDK 21 and Maven:
+Docker builds everything; for local development you need JDK 25 and Maven:
 
 ```bash
 mvn test          # unit tests incl. CPython-generated canonicalization vectors

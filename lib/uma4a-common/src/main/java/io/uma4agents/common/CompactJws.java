@@ -1,8 +1,8 @@
 package io.uma4agents.common;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -61,7 +61,7 @@ public final class CompactJws {
     private static byte[] toJson(Map<String, Object> value) {
         try {
             return MAPPER.writeValueAsBytes(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("unserializable JWS content", e);
         }
     }
@@ -69,7 +69,7 @@ public final class CompactJws {
     private static Map<String, Object> fromJson(byte[] json) {
         try {
             return MAPPER.readValue(json, MAP_TYPE);
-        } catch (java.io.IOException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("malformed JWS segment", e);
         }
     }

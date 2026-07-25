@@ -1,7 +1,7 @@
 package io.uma4agents.shim;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import io.uma4agents.agent.AgentKeys;
 import io.uma4agents.agent.GrantClient;
 import java.io.IOException;
@@ -151,7 +151,7 @@ final class Upstream {
         } catch (RuntimeException e) {
             try {
                 return MAPPER.writeValueAsString(reply.payload());
-            } catch (com.fasterxml.jackson.core.JsonProcessingException je) {
+            } catch (tools.jackson.core.JacksonException je) {
                 return String.valueOf(reply.payload());
             }
         }

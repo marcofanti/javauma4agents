@@ -1,7 +1,7 @@
 package io.uma4agents.driver;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import io.uma4agents.agent.AgentKeys;
 import io.uma4agents.agent.EnrollClient;
 import io.uma4agents.agent.GrantClient;
@@ -314,7 +314,7 @@ public final class DemoDriver {
             try {
                 String json = MAPPER.writeValueAsString(payload);
                 say("result: " + json.substring(0, Math.min(200, json.length())));
-            } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
+            } catch (tools.jackson.core.JacksonException ignored) {
                 say("result: " + payload);
             }
         }

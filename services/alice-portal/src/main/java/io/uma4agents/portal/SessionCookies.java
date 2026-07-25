@@ -1,8 +1,8 @@
 package io.uma4agents.portal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,7 +57,7 @@ public class SessionCookies {
             }
             try {
                 return MAPPER.readValue(payload, new TypeReference<>() {});
-            } catch (java.io.IOException e) {
+            } catch (tools.jackson.core.JacksonException e) {
                 return new HashMap<>();
             }
         }
@@ -68,7 +68,7 @@ public class SessionCookies {
         byte[] payload;
         try {
             payload = MAPPER.writeValueAsBytes(session);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("unserializable session", e);
         }
         String value = Base64.getUrlEncoder().withoutPadding().encodeToString(payload)

@@ -1,7 +1,7 @@
 package io.uma4agents.portal;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -56,7 +56,7 @@ public class VaultClient {
         }
         try {
             return MAPPER.readValue(text, new TypeReference<>() {});
-        } catch (IOException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             throw new IllegalStateException(
                     "vault tool " + tool + " returned non-JSON text: " + text, e);
         }

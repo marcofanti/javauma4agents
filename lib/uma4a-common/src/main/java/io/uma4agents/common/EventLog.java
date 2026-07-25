@@ -1,6 +1,6 @@
 package io.uma4agents.common;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -41,7 +41,7 @@ public final class EventLog {
         line.put("details", details);
         try {
             System.out.println(MAPPER.writeValueAsString(line));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (tools.jackson.core.JacksonException e) {
             System.out.println("{\"event\":\"" + name + "\",\"actor\":\"" + actor + "\"}");
         }
     }
