@@ -1,7 +1,7 @@
 # javauma4agents
 
 **Source:** Java port of https://github.com/nickgamb/uma4agents.git
-**Stack:** Java 25 / Spring Boot 4 multi-module Maven, in the original Docker Compose lab
+**Stack:** Java 26 / Spring Boot 4 multi-module Maven, in the original Docker Compose lab
 (Keycloak, Envoy, agentgateway, hickory-dns, Grafana/Loki, upstream AAuth person-server)
 
 A Java implementation of the UMA-for-Agents proof-of-concept: a resource owner sets access
@@ -26,5 +26,5 @@ make audit       # print Alice's activity ledger
 
 Requires Docker Desktop (or Engine + Compose v2) and `mkcert`. Portal at
 `https://portal.uma.lab` (login `alice` / `alice-demo`), observability at
-`https://grafana.uma.lab`. Local builds need JDK 25 + Maven (`mvn test`).
+`https://grafana.uma.lab`. Local builds need JDK 26 + Maven (`mvn test`).
 See `README.md`, `docs/ARCHITECTURE.md`, and `docs/PROTOCOL.md`.

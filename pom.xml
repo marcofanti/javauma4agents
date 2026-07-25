@@ -30,8 +30,8 @@
   </modules>
 
   <properties>
-    <java.version>25</java.version>
-    <maven.compiler.release>25</maven.compiler.release>
+    <java.version>26</java.version>
+    <maven.compiler.release>26</maven.compiler.release>
     <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
     <mcp.version>2.0.0</mcp.version>
   </properties>
