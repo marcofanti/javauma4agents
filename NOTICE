@@ -1,0 +1,110 @@
+UMA for Agents (Java)
+Copyright 2026 Marco Fanti
+
+This product is a Java port of UMA for Agents,
+Copyright 2026 Nick Gamb (https://github.com/nickgamb/uma4agents),
+a proof-of-concept exploring User-Managed Access (UMA) 2.0 for agentic
+authorization developed in collaboration with Eve Maler and the Kantara
+Initiative UMA Work Group, and licensed under the Apache License 2.0.
+The Python conformance harness (clients/agent-shim/test_shim.py) and the
+wire protocol, JSON payloads, and RFC 9421 signing profiles are derived
+from that work.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy
+of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+Specifications implemented or profiled
+================================================================================
+
+This work implements, profiles, or extends the following specifications. They
+are cited as normative references; no specification text is reproduced here
+beyond brief quotation for identification.
+
+  User-Managed Access (UMA) 2.0 Grant for OAuth 2.0 Authorization
+  Federated Authorization for UMA 2.0
+      Kantara Initiative. https://docs.kantarainitiative.org/uma/
+
+  RFC 9728  OAuth 2.0 Protected Resource Metadata
+  RFC 9421  HTTP Message Signatures
+  RFC 7638  JSON Web Key (JWK) Thumbprint
+      IETF. Reproduced under the IETF Trust Legal Provisions.
+
+  AAuth Protocol (draft-hardt-oauth-aauth-protocol), and the companion
+  AAuth R3 and Bootstrap drafts
+      Dick Hardt. https://github.com/dickhardt/AAuth
+
+  IEEE Std 7012-2025, Standard for Machine Readable Personal Privacy Terms
+  ("MyTerms")
+      IEEE Standards Association. Cited by section; the standard itself is
+      published by IEEE and is not redistributed with this work.
+
+================================================================================
+Third-party software
+================================================================================
+
+The following third-party components are used by this project. None of them
+are vendored into this repository — they are fetched at build or run time by
+Maven, `make`, and `docker compose`, and each remains under its own license.
+
+  Spring Boot / Spring Framework ................................ Apache-2.0
+      Application framework for the uma-as, uma-pep, alice-portal, and
+      alice-vault services.
+
+  Jackson 3 (tools.jackson) ..................................... Apache-2.0
+      JSON serialization throughout.
+
+  Model Context Protocol Java SDK (mcp-core, mcp-json-jackson3) . MIT
+      MCP server and client plumbing for alice-vault and the agent shim.
+
+  agentgateway .................................................. Apache-2.0
+      https://github.com/agentgateway/agentgateway
+      Used as the MCP gateway / PEP host. gateway/agw.yaml is a
+      configuration expressed in agentgateway's own configuration schema.
+
+  Keycloak ...................................................... Apache-2.0
+  Envoy Proxy ................................................... Apache-2.0
+  Hickory DNS ................................................... MIT OR Apache-2.0
+  mkcert ........................................................ BSD-3-Clause
+
+  Model Context Protocol Python SDK, httpx ...................... MIT / BSD-3-Clause
+      Used only by the cross-language conformance harness
+      (clients/agent-shim/test_shim.py); not part of the built services.
+
+  Grafana, Loki, Promtail ....................................... AGPL-3.0
+      Used unmodified as container images for observability only. No part of
+      this project is derived from or linked against them; the dashboard and
+      datasource definitions under observability/ are original works of the
+      upstream project.
+
+================================================================================
+Upstream AAuth reference implementations (not licensed for redistribution)
+================================================================================
+
+The `make fetch-upstream` target clones the following repository, and
+aauth/person-server.Dockerfile builds a container image from it:
+
+  christian-posta/aauth-person-server
+
+As of this writing that repository publishes no license, which under default
+copyright means all rights are reserved by its author. It is therefore NOT
+redistributed as part of this project: it is excluded by .gitignore, fetched
+directly from its origin by the person running the lab, and built locally.
+
+Anyone intending to use this lab beyond local evaluation should obtain
+permission from the author of that repository, or substitute their own
+AAuth person/agent server. The AAuth Person Server is optional for the
+default demo path, which signs pseudonymously.
+
+================================================================================
+Demonstration data
+================================================================================
+
+"Meridian Wealth" is a fictional firm. All brokerage figures, holdings, and
+transactions are fixture data flowing through a real protocol path. No market
+data, real accounts, or real orders are involved. Credentials committed to
+this repository are development defaults for a self-contained local lab, not
+secrets.
