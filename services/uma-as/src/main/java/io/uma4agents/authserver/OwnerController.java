@@ -1,15 +1,11 @@
 package io.uma4agents.authserver;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,11 +41,7 @@ public class OwnerController {
             @RequestHeader(value = "authorization", required = false) String authorization) {
         verifiers.requireOwner(authorization);
         List<Map<String, Object>> out = new ArrayList<>();
-        Set<Map<String, Object>> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        for (Map<String, Object> rec : state.tickets.values()) {
-            if (!seen.add(rec)) {
-                continue;
-            }
+        for (Map<String, Object> rec : state.negotiations.values()) {
             if ("awaiting-owner".equals(rec.get("state")) && rec.get("decision") == null) {
                 Map<String, Object> contract = (Map<String, Object>) rec.get("contract");
                 Map<String, Object> item = new LinkedHashMap<>();
@@ -78,17 +70,12 @@ public class OwnerController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "decision must be approved|denied");
         }
-        boolean found = false;
-        for (Map<String, Object> rec : state.tickets.values()) {
-            if (family.equals(rec.get("family")) && "awaiting-owner".equals(rec.get("state"))) {
-                rec.put("decision", decision);
-                found = true;
-            }
-        }
-        if (!found) {
+        Map<String, Object> rec = state.negotiations.get(family);
+        if (rec == null || !"awaiting-owner".equals(rec.get("state"))) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "no pending negotiation for that family");
         }
+        rec.put("decision", decision);
         state.log.event("owner.decision", family, "decision", decision);
         state.ledgerAdd("approved".equals(decision) ? "approved" : "denied", family,
                 Map.of("decision", decision));

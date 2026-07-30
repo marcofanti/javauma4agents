@@ -60,13 +60,22 @@ public class CheckController {
             args = parsedArgs;
         }
 
-        // Session bootstrap and discovery are open; invocation is protected.
-        if (!"POST".equals(request.getMethod()) || ToolCatalog.OPEN_METHODS.contains(method)
+        // Non-POST and bodiless requests carry no invocation to authorize.
+        if (!"POST".equals(request.getMethod())
                 || (method == null && tool == null && body.length == 0)) {
             return ResponseEntity.ok().build();
         }
-        if (!"tools/call".equals(method)) {
+        // Deny by default: only named-open methods pass unauthenticated, and
+        // only named-protected methods reach enforcement. An unknown method is
+        // neither.
+        if (ToolCatalog.OPEN_METHODS.contains(method)) {
             return ResponseEntity.ok().build();
+        }
+        if (!ToolCatalog.PROTECTED_METHODS.contains(method)) {
+            config.log.event("access.denied", null, "reason", "unknown-method",
+                    "mcp_method", method);
+            return deny(403, Map.of("error", "unknown_method",
+                    "error_description", method + " is not enforceable by this PEP"));
         }
         if (tool == null || !ToolCatalog.TOOLS.containsKey(tool)) {
             config.log.event("access.denied", null, "reason", "unknown-tool", "tool", tool);
@@ -85,14 +94,28 @@ public class CheckController {
         String rpt = authz.substring(4);
 
         boolean singleUse = ToolCatalog.SINGLE_USE_TOOLS.contains(tool);
+        // Enforcement order matters, and the naive order is a live denial of
+        // service: consuming a single-use RPT here — before the signature is
+        // checked — lets anyone who observes the token destroy a grant the
+        // owner personally approved, just by replaying it unsigned. Nothing is
+        // spent until every check below has passed.
         Map<String, Object> info;
         try {
-            info = as.introspect(rpt, singleUse);
+            info = as.introspect(rpt);
         } catch (RuntimeException e) {
             return deny(503, Map.of("error", "as_unreachable"));
         }
         if (!Boolean.TRUE.equals(info.get("active"))) {
-            config.log.event("access.denied", null, "reason", "inactive-rpt", "tool", tool);
+            String reason = info.get("error") instanceof String s ? s : "inactive";
+            config.log.event("access.denied", null, "reason", "inactive-rpt: " + reason,
+                    "tool", tool);
+            // A revoked connection is a settled decision, not a missing one.
+            // Re-challenging would send the agent round a negotiation loop
+            // whose outcome the owner has already fixed.
+            if ("connection_revoked".equals(reason)) {
+                return deny(403, Map.of("error", "access_revoked",
+                        "error_description", "the resource owner revoked this agent"));
+            }
             return challenge(tool, originalPath);
         }
 
@@ -148,6 +171,15 @@ public class CheckController {
                         "tool", tool, "expected", expected, "actual", actual);
                 return deny(403, Map.of("error", "operation_mismatch",
                         "error_description", "RPT authorizes a different operation"));
+            }
+            // Everything has verified; now spend it. The burn is the atomic
+            // step, so losing the race means another caller got there first
+            // and this request must not proceed.
+            if (!as.consumeRpt(rpt)) {
+                config.log.event("access.denied", null, "reason", "consume-lost-race",
+                        "tool", tool);
+                return deny(403, Map.of("error", "already_consumed",
+                        "error_description", "this single-use grant was already spent"));
             }
         }
 

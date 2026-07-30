@@ -117,10 +117,21 @@ public class AsClient {
         }
     }
 
-    public Map<String, Object> introspect(String token, boolean consume) {
-        Map<String, Object> body = postForm(config.asInternal + "/introspect", Map.of(
-                "token", token, "consume", consume ? "true" : "false"), getPat(false));
-        return body;
+    /** Asks the AS about an RPT. Never consumes — see {@link #consumeRpt}. */
+    public Map<String, Object> introspect(String token) {
+        return postForm(config.asInternal + "/introspect", Map.of(
+                "token", token, "consume", "false"), getPat(false));
+    }
+
+    /** Burns a single-use RPT after every other check has passed. */
+    public boolean consumeRpt(String token) {
+        try {
+            Map<String, Object> body = postForm(config.asInternal + "/consume",
+                    Map.of("token", token), getPat(false));
+            return Boolean.TRUE.equals(body.get("consumed"));
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     /** Reports an allowed call so the ledger's "touched" column is grounded. */

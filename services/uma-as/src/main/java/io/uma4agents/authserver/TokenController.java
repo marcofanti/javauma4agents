@@ -69,6 +69,7 @@ public class TokenController {
             return ResponseEntity.status(400).body(Map.of("error", "unsupported_grant_type"));
         }
 
+        state.reapExpired();
         Map<String, Object> rec = state.consumeTicket(ticket);
         if (rec == null) {
             state.log.event("ticket.presented", null, "result", "invalid_grant");
@@ -96,6 +97,7 @@ public class TokenController {
             entry.put("tier", rec.get("tier"));
             entry.put("terms_uri", template.get("terms_uri"));
             state.ledgerAdd("refused", family, entry);
+            state.closeNegotiation(rec);
             return ResponseEntity.status(403).body(Map.of("error", "request_denied"));
         }
 
@@ -108,6 +110,7 @@ public class TokenController {
                 policy.tierForResource((String) rec.get("resource_id"));
         if (tierEntry == null) {
             state.log.event("policy.evaluated", family, "result", "no-tier");
+            state.closeNegotiation(rec);
             return ResponseEntity.status(403).body(Map.of("error", "request_denied"));
         }
         String tierId = tierEntry.getKey();
@@ -130,6 +133,7 @@ public class TokenController {
             verified = grants.verifyContract(claimToken, rec);
         } catch (Exception e) {
             state.log.event("contract.rejected", family, "reason", e.getMessage());
+            state.closeNegotiation(rec);
             return ResponseEntity.status(403).body(Map.of(
                     "error", "request_denied", "error_description", e.getMessage()));
         }
@@ -196,7 +200,9 @@ public class TokenController {
         conn.put("last_access", EventLog.utcNow());
         state.log.event("policy.evaluated", family, "result", "auto-grant",
                 "tier", rec.get("tier"), "connection", handle);
-        return ResponseEntity.ok(grants.issueRpt(rec, contractHash, signerJwk, null));
+        Map<String, Object> granted = grants.issueRpt(rec, contractHash, signerJwk, null);
+        state.closeNegotiation(rec);
+        return ResponseEntity.ok(granted);
     }
 
     private ResponseEntity<Object> needInfoResponse(Map<String, Object> rec, String tierId,
@@ -258,14 +264,17 @@ public class TokenController {
             // Tier policy still applies after connection: an ask-me tier's
             // per-operation approval was covered by Alice's tap only because
             // this negotiation's contract binds the operation.
-            return ResponseEntity.ok(grants.issueRpt(rec,
+            Map<String, Object> granted = grants.issueRpt(rec,
                     (String) rec.get("contract_hash"),
                     (Map<String, Object>) rec.get("signer_jwk"),
-                    (Map<String, Object>) contract.get("operation")));
+                    (Map<String, Object>) contract.get("operation"));
+            state.closeNegotiation(rec);
+            return ResponseEntity.ok(granted);
         }
         if ("denied".equals(rec.get("decision"))) {
             state.log.event("policy.evaluated", family, "result", "owner-denied",
                     "tier", rec.get("tier"));
+            state.closeNegotiation(rec);
             return ResponseEntity.status(403).body(Map.of("error", "request_denied"));
         }
         String rotated = state.newTicket(rec);

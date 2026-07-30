@@ -15,8 +15,16 @@ public final class ToolCatalog {
 
     public static final Map<String, Surface> TOOLS = tools();
     public static final Set<String> SINGLE_USE_TOOLS = Set.of("execute_trade");
-    public static final Set<String> OPEN_METHODS =
-            Set.of("initialize", "notifications/initialized", "tools/list", "ping");
+    /**
+     * Deny by default. An allow-list of open methods silently admits every
+     * method a future protocol revision invents, so the protected set is named
+     * instead, and anything unrecognised is refused rather than forwarded.
+     */
+    public static final Set<String> PROTECTED_METHODS = Set.of("tools/call");
+    public static final Set<String> OPEN_METHODS = Set.of(
+            "initialize", "notifications/initialized", "ping",
+            "tools/list", "prompts/list", "resources/list", "resources/templates/list",
+            "completion/complete", "logging/setLevel");
 
     private ToolCatalog() {}
 
