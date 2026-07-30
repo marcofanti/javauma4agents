@@ -36,6 +36,7 @@ public final class DemoDriver {
 
     private final Map<String, String> args;
     private final HttpClient client;
+    private Map<String, Object> prm;
     private String ownerAccessToken;
     private long ownerTokenExpires;
 
@@ -111,6 +112,34 @@ public final class DemoDriver {
         }
         List<String> acts = "all".equals(args.get("act"))
                 ? List.of("tier1", "tier2", "tier3", "revocation") : List.of(args.get("act"));
+
+        // Beat 0 — declarative discovery (RFC 9728). Before touching a tool,
+        // the agent reads the resource's published metadata: who the
+        // authorization server is, and which tool surfaces are protected under
+        // which scopes.
+        System.out.println(
+                "\n== Beat 0: the agent discovers the resource's shape (RFC 9728) ==");
+        String prmUrl = GrantClient.wellKnownPrmUrl(args.get("gateway"));
+        try {
+            prm = GrantClient.validateResourceMetadata(
+                    getJson(prmUrl), args.get("gateway"), null);
+        } catch (Exception e) {
+            System.out.println("resource metadata unavailable: " + e.getMessage());
+            return 1;
+        }
+        say("resource metadata at " + prmUrl + " (signed: "
+                + (prm.get("signed_metadata") != null ? "yes" : "no") + ")");
+        say("authorization server(s): " + joined(prm.get("authorization_servers")));
+        if (prm.get("tool_surfaces") instanceof List<?> surfaces) {
+            for (Object surface : surfaces) {
+                if (surface instanceof Map<?, ?> ts) {
+                    say("tool surface: " + ts.get("tool")
+                            + " (scopes " + joined(ts.get("resource_scopes")) + ")");
+                }
+            }
+        }
+        say("note: which resources belong to whom is not in the public document —"
+                + " owner instances live behind the protected owner-resources endpoint");
 
         McpSession session = new McpSession(client, args.get("gateway"));
         session.initialize();
@@ -231,6 +260,19 @@ public final class DemoDriver {
                 + challenge.ticket().substring(0, Math.min(20, challenge.ticket().length()))
                 + "…, AS " + challenge.asUri());
 
+        // Corroborate the (unauthenticated) challenge header against the
+        // resource's TLS-anchored published metadata before negotiating.
+        if (prm != null) {
+            try {
+                GrantClient.validateResourceMetadata(prm, args.get("gateway"),
+                        challenge.asUri());
+                say("challenge corroborated: as_uri is among the resource's "
+                        + "published authorization servers");
+            } catch (GrantClient.DiscoveryMismatchException e) {
+                throw new IllegalStateException("refusing to negotiate: " + e.getMessage());
+            }
+        }
+
         // First contact pends as a connection request regardless of tier; ask-me
         // tiers pend per operation. The simulated Alice approves whatever lands.
         if (args.containsKey("simulate-alice")) {
@@ -303,6 +345,22 @@ public final class DemoDriver {
         }
         say("revocation is terminal — not an invitation to re-negotiate");
         return 0;
+    }
+
+    private Map<String, Object> getJson(String url) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+        HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() >= 400) {
+            throw new IllegalStateException("HTTP " + response.statusCode() + " from " + url);
+        }
+        return MAPPER.readValue(response.body(), new TypeReference<>() {});
+    }
+
+    private static String joined(Object values) {
+        return values instanceof List<?> list
+                ? list.stream().map(String::valueOf).collect(Collectors.joining(", "))
+                : String.valueOf(values);
     }
 
     private List<Map<String, Object>> ownerGet(String path) throws Exception {
