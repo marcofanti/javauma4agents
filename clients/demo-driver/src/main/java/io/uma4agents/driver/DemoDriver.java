@@ -110,7 +110,7 @@ public final class DemoDriver {
             }
         }
         List<String> acts = "all".equals(args.get("act"))
-                ? List.of("tier1", "tier2", "tier3") : List.of(args.get("act"));
+                ? List.of("tier1", "tier2", "tier3", "revocation") : List.of(args.get("act"));
 
         McpSession session = new McpSession(client, args.get("gateway"));
         session.initialize();
@@ -122,14 +122,14 @@ public final class DemoDriver {
                         "\n== Act 1 (midday): Bob's agent requests Alice's holdings summary ==");
                 System.out.println(
                         "   (first contact: an unconnected agent pends until Alice connects it)");
-                CallResult out = callTool(session, keys, "get_positions", Map.of(), null);
+                CallResult out = callTool(session, keys, "get_positions", Map.of(), null, null);
                 showResult(out.payload());
             }
             if (acts.contains("tier2")) {
                 System.out.println(
                         "\n== Act 2 (midday): transaction history — watch the terms tighten ==");
                 CallResult out = callTool(session, keys, "get_transactions",
-                        Map.of("account", "brokerage-main"), null);
+                        Map.of("account", "brokerage-main"), null, null);
                 showResult(out.payload());
             }
             if (acts.contains("tier3")) {
@@ -142,7 +142,37 @@ public final class DemoDriver {
                 Map<String, Object> operation = new LinkedHashMap<>();
                 operation.put("tool", "execute_trade");
                 operation.put("params", order);
-                CallResult out = callTool(session, keys, "execute_trade", order, operation);
+
+                // Between the grant and its one legitimate use, someone who has
+                // seen the token replays it without the agent's key. A
+                // single-use grant must survive that: if the resource spends
+                // the token before checking the signature, anyone who can
+                // observe it can destroy the approval Alice just gave.
+                boolean[] replayHeld = {false};
+                java.util.function.Consumer<String> replayWithStolenToken = rpt -> {
+                    System.out.println(
+                            "\n== Act 3 interlude: someone replays the grant unsigned ==");
+                    Map<String, String> stolen = GrantClient.signedHeaders(
+                            "POST", GATEWAY_AUTHORITY, MCP_PATH, rpt, keys);
+                    // Must match signedHeaders' exact key casing — a lowercase
+                    // "signature" is a second header, not an override, and the
+                    // forgery silently never happens.
+                    stolen.put("Signature", "sig1=:" + "A".repeat(86) + ":");
+                    Map<String, Object> params = new LinkedHashMap<>();
+                    params.put("name", "execute_trade");
+                    params.put("arguments", order);
+                    McpSession.Reply r = session.request("tools/call", params, stolen, false);
+                    say(r.status() + ": replay rejected — proof-of-possession failed");
+                    replayHeld[0] = r.status() == 401;
+                };
+
+                CallResult out = callTool(session, keys, "execute_trade", order, operation,
+                        replayWithStolenToken);
+                if (!replayHeld[0]) {
+                    System.out.println("FAIL: a forged signature was not rejected with 401");
+                    return 1;
+                }
+                say("Alice's approval survived the replay — the honest call went through");
                 showResult(out.payload());
 
                 System.out.println("\n== Act 3 epilogue: the same RPT, tried again ==");
@@ -159,6 +189,12 @@ public final class DemoDriver {
                     return 1;
                 }
             }
+            if (acts.contains("revocation")) {
+                int result = actRevocation(session, keys);
+                if (result != 0) {
+                    return result;
+                }
+            }
         } catch (GrantClient.GrantDeniedException | GrantClient.TermsRejectedException e) {
             System.out.println("grant denied: " + e.getMessage());
             return 1;
@@ -170,9 +206,14 @@ public final class DemoDriver {
 
     private record CallResult(Map<String, Object> payload, String rpt) {}
 
-    /** tools/call with the full grant dance on 401. */
+    /**
+     * tools/call with the full grant dance on 401. {@code onGrant}, if given,
+     * runs after the RPT is issued but before the authorized call — the window
+     * where a replay attack would land.
+     */
     private CallResult callTool(McpSession session, AgentKeys keys, String tool,
-                                Map<String, Object> toolArgs, Map<String, Object> operation) {
+                                Map<String, Object> toolArgs, Map<String, Object> operation,
+                                java.util.function.Consumer<String> onGrant) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("name", tool);
         params.put("arguments", toolArgs);
@@ -201,6 +242,10 @@ public final class DemoDriver {
         String rpt = GrantClient.runGrant(client, challenge.asUri(), challenge.ticket(), keys,
                 this::approveTerms, operation, DemoDriver::say, DemoDriver::holdReceipt, 120);
 
+        if (onGrant != null) {
+            onGrant.accept(rpt);
+        }
+
         Map<String, String> headers = GrantClient.signedHeaders(
                 "POST", GATEWAY_AUTHORITY, MCP_PATH, rpt, keys);
         reply = session.request("tools/call", params, headers, false);
@@ -209,6 +254,79 @@ public final class DemoDriver {
                     + " " + reply.raw().substring(0, Math.min(300, reply.raw().length())));
         }
         return new CallResult(reply.payload(), rpt);
+    }
+
+    /** Act 4: Alice revokes the agent; enforcement must answer terminally. */
+    private int actRevocation(McpSession session, AgentKeys keys) {
+        System.out.println("\n== Act 4 (evening): Alice revokes the agent ==");
+        CallResult out = callTool(session, keys, "get_positions", Map.of(), null, null);
+        say("agent holds a live grant for the holdings summary");
+
+        String handle;
+        int deactivated;
+        try {
+            List<Map<String, Object>> conns = ownerGet("/owner/connections");
+            handle = conns.stream()
+                    .filter(c -> "active".equals(c.get("status")))
+                    .map(c -> (String) c.get("handle"))
+                    .findFirst().orElse(null);
+            if (handle == null) {
+                System.out.println("FAIL: no active connection to revoke");
+                return 1;
+            }
+            Map<String, Object> revoked = ownerPost(
+                    "/owner/connections/" + handle + "/revoke");
+            deactivated = revoked.get("rpts_deactivated") instanceof Number n
+                    ? n.intValue() : 0;
+        } catch (Exception e) {
+            System.out.println("FAIL: revocation via the owner API failed: " + e.getMessage());
+            return 1;
+        }
+        say("[alice] revoked " + handle.substring(0, Math.min(24, handle.length()))
+                + "… — " + deactivated + " live grant(s) deactivated");
+
+        // A revoked relationship is a decision the owner already made.
+        // Answering 401 would invite the agent to negotiate again for an
+        // outcome that is settled, so enforcement has to say so terminally.
+        Map<String, String> sig = GrantClient.signedHeaders(
+                "POST", GATEWAY_AUTHORITY, MCP_PATH, out.rpt(), keys);
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("name", "get_positions");
+        params.put("arguments", Map.of());
+        McpSession.Reply reply = session.request("tools/call", params, sig, false);
+        say(reply.status() + ": "
+                + reply.raw().substring(0, Math.min(80, reply.raw().length())));
+        if (reply.status() != 403) {
+            System.out.println("FAIL: revoked agent got " + reply.status()
+                    + ", expected a terminal 403");
+            return 1;
+        }
+        say("revocation is terminal — not an invitation to re-negotiate");
+        return 0;
+    }
+
+    private List<Map<String, Object>> ownerGet(String path) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(args.get("as-internal") + path))
+                .header("Authorization", "Bearer " + ownerToken())
+                .GET().build();
+        HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+        return MAPPER.readValue(response.body(), new TypeReference<>() {});
+    }
+
+    private Map<String, Object> ownerPost(String path) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(args.get("as-internal") + path))
+                .header("Authorization", "Bearer " + ownerToken())
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() >= 400) {
+            throw new IllegalStateException("HTTP " + response.statusCode() + " from " + path);
+        }
+        return MAPPER.readValue(response.body(), new TypeReference<>() {});
     }
 
     /** Bob's standing terms policy: what he accepts without being asked. */

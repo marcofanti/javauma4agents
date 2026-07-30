@@ -182,13 +182,10 @@ public class ProtectionController {
         return ResponseEntity.status(201).body(Map.of("ticket", ticket));
     }
 
-    @PostMapping(value = "/introspect",
-            consumes = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public Map<String, Object> introspect(
-            @RequestHeader(value = "authorization", required = false) String authorization,
-            @RequestParam("token") String token,
-            @RequestParam(value = "consume", required = false) String consume) {
-        grants.requirePat(authorization);
+    /** A decoded-and-looked-up RPT: claims, live record, or a reason it is dead. */
+    private record DecodedRpt(Map<String, Object> claims, Map<String, Object> rec, String err) {}
+
+    private DecodedRpt decodeRpt(String token) {
         Map<String, Object> claims;
         try {
             CompactJws.Parsed parsed = CompactJws.verify(token, state.signingKey.getPublic());
@@ -196,37 +193,65 @@ public class ProtectionController {
             if (!config.issuer.equals(claims.get("iss"))) {
                 throw new SecurityException("unexpected issuer");
             }
+        } catch (Exception e) {
+            return new DecodedRpt(null, null, "invalid_signature");
+        }
+        try {
             TokenVerifiers.checkExpiry(claims);
         } catch (Exception e) {
-            state.log.event("rpt.introspected", null, "details_result", "invalid: " + e.getMessage());
-            return Map.of("active", false);
+            return new DecodedRpt(null, null, "expired");
         }
-
-        String jti = String.valueOf(claims.getOrDefault("jti", ""));
-        Map<String, Object> rec = state.rpts.get(jti);
+        Map<String, Object> rec = state.rpts.get(String.valueOf(claims.getOrDefault("jti", "")));
         if (rec == null) {
-            return Map.of("active", false);
+            return new DecodedRpt(claims, null, "unknown_token");
         }
-        String family = String.valueOf(rec.get("family"));
         Map<String, Object> conn = state.connections.get(String.valueOf(rec.get("handle")));
         if (conn != null && !"active".equals(conn.get("status"))) {
-            state.log.event("rpt.introspected", family, "result", "connection-revoked");
-            return Map.of("active", false);
+            return new DecodedRpt(claims, rec, "connection_revoked");
         }
+        if (Boolean.TRUE.equals(claims.get("single_use"))
+                && Boolean.TRUE.equals(rec.get("consumed"))) {
+            return new DecodedRpt(claims, rec, "already_consumed");
+        }
+        return new DecodedRpt(claims, rec, "");
+    }
+
+    @PostMapping(value = "/introspect",
+            consumes = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public Map<String, Object> introspect(
+            @RequestHeader(value = "authorization", required = false) String authorization,
+            @RequestParam("token") String token,
+            @RequestParam(value = "consume", required = false) String consume) {
+        grants.requirePat(authorization);
+        DecodedRpt decoded = decodeRpt(token);
+        if (!decoded.err().isEmpty()) {
+            // RFC 7662 permits additional members. Without a reason the PEP
+            // cannot tell "come back after re-negotiating" from "the owner
+            // revoked you and re-negotiating is pointless" — and sends revoked
+            // agents round a loop.
+            String family = decoded.rec() == null ? null
+                    : String.valueOf(decoded.rec().get("family"));
+            state.log.event("rpt.introspected", family, "result", decoded.err());
+            return Map.of("active", false, "error", decoded.err());
+        }
+        Map<String, Object> claims = decoded.claims();
+        Map<String, Object> rec = decoded.rec();
+        String family = String.valueOf(rec.get("family"));
+
+        Map<String, Object> conn = state.connections.get(String.valueOf(rec.get("handle")));
         if (conn != null) {
             conn.put("last_access", EventLog.utcNow());
         }
-        synchronized (rec) {
-            if (Boolean.TRUE.equals(claims.get("single_use"))) {
-                if (Boolean.TRUE.equals(rec.get("consumed"))) {
-                    state.log.event("rpt.introspected", family, "result", "already-consumed");
-                    return Map.of("active", false);
-                }
-                if ("true".equals(consume)) {
-                    rec.put("consumed", true);
-                    state.log.event("rpt.consumed", family, "jti", jti);
-                }
+        // Consumption is no longer done here by default: the PEP has not yet
+        // verified proof-of-possession at this point, so burning the token now
+        // lets an unsigned replay destroy a grant the owner just approved. The
+        // PEP calls /consume once every check has passed. The parameter is kept
+        // for the single-shot case where a caller has already verified.
+        if (Boolean.TRUE.equals(claims.get("single_use")) && "true".equals(consume)) {
+            synchronized (rec) {
+                rec.put("consumed", true);
             }
+            state.log.event("rpt.consumed", family, "jti", claims.getOrDefault("jti", ""));
         }
 
         state.log.event("rpt.introspected", family, "result", "active");
@@ -242,6 +267,38 @@ public class ProtectionController {
         out.put("single_use", claims.getOrDefault("single_use", false));
         out.put("operation", claims.get("operation"));
         return out;
+    }
+
+    /**
+     * Burns a single-use RPT — the last step of enforcement, not the first.
+     * Split out of introspection so the PEP can verify proof-of-possession and
+     * the operation binding <em>before</em> anything is spent. Check-then-act,
+     * so the burn itself has to be the atomic step: a caller that loses the
+     * race is told so and must deny.
+     */
+    @PostMapping(value = "/consume",
+            consumes = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public Map<String, Object> consumeRpt(
+            @RequestHeader(value = "authorization", required = false) String authorization,
+            @RequestParam("token") String token) {
+        grants.requirePat(authorization);
+        DecodedRpt decoded = decodeRpt(token);
+        if (!decoded.err().isEmpty()) {
+            return Map.of("consumed", false, "error", decoded.err());
+        }
+        if (!Boolean.TRUE.equals(decoded.claims().get("single_use"))) {
+            return Map.of("consumed", false, "error", "not_single_use");
+        }
+        Map<String, Object> rec = decoded.rec();
+        synchronized (rec) {
+            if (Boolean.TRUE.equals(rec.get("consumed"))) {
+                return Map.of("consumed", false, "error", "already_consumed");
+            }
+            rec.put("consumed", true);
+        }
+        String family = String.valueOf(rec.get("family"));
+        state.log.event("rpt.consumed", family, "jti", decoded.claims().getOrDefault("jti", ""));
+        return Map.of("consumed", true, "family", family);
     }
 
     @PostMapping("/audit/access")

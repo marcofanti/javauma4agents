@@ -13,7 +13,7 @@ FROM eclipse-temurin:26-jre
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip \
     && rm -rf /var/lib/apt/lists/* \
-    && pip3 install --break-system-packages --no-cache-dir 'mcp>=1.13' httpx 'pyjwt[crypto]'
+    && pip3 install --break-system-packages --no-cache-dir 'mcp>=1.13,<2' httpx 'pyjwt[crypto]'
 COPY --from=build /src/clients/agent-shim/target/shim.jar /app/shim.jar
 ENV SHIM_CMD="java -jar /app/shim.jar"
 CMD ["java", "-jar", "/app/shim.jar"]
