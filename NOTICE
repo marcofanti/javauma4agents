@@ -70,6 +70,13 @@ Maven, `make`, and `docker compose`, and each remains under its own license.
   Hickory DNS ................................................... MIT OR Apache-2.0
   mkcert ........................................................ BSD-3-Clause
 
+  aauth-person-server ........................................... Apache-2.0
+      https://github.com/christian-posta/aauth-person-server
+      The AAuth Person/Agent server for the identified-agent path. Cloned
+      at the ref pinned in the Makefile by `make fetch-upstream` and built
+      into a local container image; never vendored into this repository.
+      Optional: the default demo path signs pseudonymously.
+
   Model Context Protocol Python SDK, httpx ...................... MIT / BSD-3-Clause
       Used only by the cross-language conformance harness
       (clients/agent-shim/test_shim.py); not part of the built services.
@@ -79,25 +86,6 @@ Maven, `make`, and `docker compose`, and each remains under its own license.
       this project is derived from or linked against them; the dashboard and
       datasource definitions under observability/ are original works of the
       upstream project.
-
-================================================================================
-Upstream AAuth reference implementations (not licensed for redistribution)
-================================================================================
-
-The `make fetch-upstream` target clones the following repository, and
-aauth/person-server.Dockerfile builds a container image from it:
-
-  christian-posta/aauth-person-server
-
-As of this writing that repository publishes no license, which under default
-copyright means all rights are reserved by its author. It is therefore NOT
-redistributed as part of this project: it is excluded by .gitignore, fetched
-directly from its origin by the person running the lab, and built locally.
-
-Anyone intending to use this lab beyond local evaluation should obtain
-permission from the author of that repository, or substitute their own
-AAuth person/agent server. The AAuth Person Server is optional for the
-default demo path, which signs pseudonymously.
 
 ================================================================================
 Demonstration data
