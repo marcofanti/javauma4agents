@@ -75,6 +75,12 @@ public class AsClient {
     @Bean
     public ApplicationRunner registerResourcesAtStartup() {
         return args -> {
+            if (!"push".equals(config.registrationMode)) {
+                config.log.event("registration.declarative", null,
+                        "mode", config.registrationMode,
+                        "note", "publishing only; the AS pulls what it needs");
+                return;
+            }
             for (int attempt = 0; attempt < 30; attempt++) {
                 try {
                     registerToolSurfaces();
@@ -99,10 +105,12 @@ public class AsClient {
                 // PAT expired mid-flight or the AS restarted with new keys.
                 r = postJsonRaw(config.asInternal + "/perm", request, getPat(true));
             }
-            if (r.statusCode() == 400
+            if ("push".equals(config.registrationMode) && r.statusCode() == 400
                     && "invalid_resource_id".equals(parse(r.body()).get("error"))) {
                 // The AS restarted and lost the push-registered state; the RS is
-                // the party that has to notice and repair it (FedAuthz).
+                // the party that has to notice and repair it (FedAuthz). In
+                // pull mode the repair burden sits with the AS instead: it
+                // re-reads the published metadata when it meets an unknown id.
                 config.log.event("resources.reregistered", null, "reason", "as_lost_registry");
                 registerToolSurfaces();
                 r = postJsonRaw(config.asInternal + "/perm", request, getPat(false));

@@ -38,6 +38,8 @@ public final class GrantClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Pattern AS_URI = Pattern.compile("as_uri=\"([^\"]+)\"");
     private static final Pattern TICKET = Pattern.compile("ticket=\"([^\"]+)\"");
+    private static final Pattern RESOURCE_METADATA =
+            Pattern.compile("resource_metadata=\"([^\"]+)\"");
 
     private GrantClient() {}
 
@@ -53,8 +55,12 @@ public final class GrantClient {
         }
     }
 
-    /** Extracts (asUri, ticket) from a WWW-Authenticate: UMA header, or null. */
-    public record Challenge(String asUri, String ticket) {
+    /**
+     * A parsed WWW-Authenticate: UMA challenge. {@code resourceMetadata} is
+     * the RFC 9728 pointer the resource may add so the client can corroborate
+     * {@code asUri} against the resource's own published metadata.
+     */
+    public record Challenge(String asUri, String ticket, String resourceMetadata) {
         public static Challenge parse(String wwwAuthenticate) {
             if (wwwAuthenticate == null || !wwwAuthenticate.contains("UMA")) {
                 return null;
@@ -64,8 +70,53 @@ public final class GrantClient {
             if (!as.find() || !ticket.find()) {
                 return null;
             }
-            return new Challenge(as.group(1), ticket.group(1));
+            Matcher rm = RESOURCE_METADATA.matcher(wwwAuthenticate);
+            return new Challenge(as.group(1), ticket.group(1),
+                    rm.find() ? rm.group(1) : null);
         }
+    }
+
+    /**
+     * The resource's published metadata contradicts what the client was told —
+     * wrong {@code resource} value, or a challenge naming an AS the resource
+     * never published.
+     */
+    public static class DiscoveryMismatchException extends RuntimeException {
+        public DiscoveryMismatchException(String message) {
+            super(message);
+        }
+    }
+
+    /** RFC 9728 §3: the well-known path goes between host and resource path. */
+    public static String wellKnownPrmUrl(String resourceUrl) {
+        URI u = URI.create(resourceUrl);
+        String path = u.getRawPath() == null ? "" : u.getRawPath();
+        while (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return u.getScheme() + "://" + u.getRawAuthority()
+                + "/.well-known/oauth-protected-resource" + path;
+    }
+
+    /**
+     * RFC 9728 §3.3 client validation: the {@code resource} value must
+     * identify the resource being accessed. When a challenge is in hand, its
+     * as_uri must be among the published authorization_servers — the
+     * TLS-anchored metadata corroborates the (unauthenticated) challenge
+     * header.
+     */
+    public static Map<String, Object> validateResourceMetadata(
+            Map<String, Object> doc, String resourceUrl, String asUri) {
+        if (!resourceUrl.equals(doc.get("resource"))) {
+            throw new DiscoveryMismatchException("metadata is for "
+                    + doc.get("resource") + ", not " + resourceUrl);
+        }
+        Object servers = doc.get("authorization_servers");
+        if (asUri != null && (!(servers instanceof List<?> list) || !list.contains(asUri))) {
+            throw new DiscoveryMismatchException("challenge names AS " + asUri
+                    + ", which the resource's metadata does not publish (" + servers + ")");
+        }
+        return doc;
     }
 
     /**

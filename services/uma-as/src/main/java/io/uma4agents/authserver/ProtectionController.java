@@ -27,11 +27,27 @@ public class ProtectionController {
     private final AsConfig config;
     private final AsState state;
     private final GrantService grants;
+    private final RegistrationPuller puller;
 
-    public ProtectionController(AsConfig config, AsState state, GrantService grants) {
+    public ProtectionController(AsConfig config, AsState state, GrantService grants,
+                                RegistrationPuller puller) {
         this.config = config;
         this.state = state;
         this.grants = grants;
+        this.puller = puller;
+    }
+
+    /**
+     * In pull mode the registry is materialized from what the RS publishes;
+     * accepting pushes too would leave two writers and no single truth.
+     */
+    private void rejectPush() {
+        if ("pull".equals(config.registrationMode)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED,
+                    "this AS pulls the RS's published metadata; "
+                            + "update the published documents instead");
+        }
     }
 
     /** Validates and normalizes a FedAuthz §3 resource description, or 400s. */
@@ -61,6 +77,7 @@ public class ProtectionController {
             @RequestHeader(value = "authorization", required = false) String authorization,
             @RequestBody Map<String, Object> body) {
         grants.requirePat(authorization);
+        rejectPush();
         Map<String, Object> desc = resourceDescription(body);
         if (desc == null) {
             return invalidDescription();
@@ -112,6 +129,7 @@ public class ProtectionController {
             @RequestHeader(value = "authorization", required = false) String authorization,
             @RequestBody Map<String, Object> body, HttpServletRequest request) {
         grants.requirePat(authorization);
+        rejectPush();
         String rid = ridFrom(request);
         if (!state.resources.containsKey(rid)) {
             return notFound();
@@ -131,6 +149,7 @@ public class ProtectionController {
             @RequestHeader(value = "authorization", required = false) String authorization,
             HttpServletRequest request) {
         grants.requirePat(authorization);
+        rejectPush();
         String rid = ridFrom(request);
         if (state.resources.remove(rid) == null) {
             return notFound();
@@ -154,6 +173,12 @@ public class ProtectionController {
         grants.requirePat(authorization);
         String rid = body.get("resource_id") instanceof String id ? id : null;
         Map<String, Object> registered = rid == null ? null : state.resources.get(rid);
+        if (registered == null && "pull".equals(config.registrationMode)) {
+            // The mirror of push mode's RS-side repair: an unknown id means our
+            // pulled copy may be stale, so re-read what the RS publishes.
+            puller.pullAll();
+            registered = rid == null ? null : state.resources.get(rid);
+        }
         if (registered == null) {
             state.log.event("permission.rejected", null, "resource_id", rid,
                     "reason", "invalid_resource_id");

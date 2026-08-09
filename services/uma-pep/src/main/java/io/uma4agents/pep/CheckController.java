@@ -201,9 +201,15 @@ public class CheckController {
         }
         config.log.event("challenge.issued", null, "tool", tool,
                 "resource_id", surface.resourceId(), "path", originalPath);
+        // RFC 9728 §5.1: the challenge names the resource's metadata document,
+        // so the client can corroborate as_uri against what the resource
+        // publishes instead of taking the header's word for it.
+        String prmUrl = "https://" + config.expectedAuthority
+                + "/.well-known/oauth-protected-resource/mcp";
         return ResponseEntity.status(401)
                 .header("WWW-Authenticate", "UMA realm=\"" + config.realm
-                        + "\", as_uri=\"" + config.asPublic + "\", ticket=\"" + ticket + "\"")
+                        + "\", as_uri=\"" + config.asPublic + "\", ticket=\"" + ticket
+                        + "\", resource_metadata=\"" + prmUrl + "\"")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("error", "uma_challenge"));
     }
@@ -239,28 +245,6 @@ public class CheckController {
     private static String header(HttpServletRequest request, String name) {
         String value = request.getHeader(name);
         return value == null ? "" : value;
-    }
-
-    /** RFC 9728 Protected Resource Metadata (with the tool_surfaces extension). */
-    @GetMapping({"/.well-known/oauth-protected-resource",
-            "/.well-known/oauth-protected-resource/mcp"})
-    public Map<String, Object> protectedResourceMetadata() {
-        Set<String> scopes = new TreeSet<>();
-        ToolCatalog.TOOLS.values().forEach(s -> scopes.addAll(s.scopes()));
-        List<Map<String, Object>> surfaces = ToolCatalog.TOOLS.entrySet().stream()
-                .map(e -> Map.<String, Object>of(
-                        "tool", e.getKey(),
-                        "resource_id", e.getValue().resourceId(),
-                        "resource_scopes", e.getValue().scopes()))
-                .toList();
-        Map<String, Object> doc = new LinkedHashMap<>();
-        doc.put("resource", "https://" + config.expectedAuthority + "/mcp");
-        doc.put("authorization_servers", List.of(config.asPublic));
-        doc.put("scopes_supported", List.copyOf(scopes));
-        doc.put("bearer_methods_supported", List.of("header"));
-        doc.put("resource_signing_alg_values_supported", List.of("EdDSA"));
-        doc.put("tool_surfaces", surfaces);
-        return doc;
     }
 
     @GetMapping("/health")

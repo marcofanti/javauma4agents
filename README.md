@@ -21,11 +21,12 @@ The whole stack runs locally with one command. It binds to
 [AAuth](https://github.com/dickhardt/AAuth) for agent identity and
 proof-of-possession.
 
-> **The question.** Every agent protocol today answers *"is this my agent doing
-> my task?"* None answers *"may your agent touch my stuff?"* An agent economy is
-> agents touching other people's stuff — and the owner isn't in the loop when
-> the agent shows up. UMA answered that a decade ago; this shows what it looks
-> like with agent-shaped mechanics.
+> **The question.** Agent-identity protocols answer *"is this my agent doing my
+> task?"* The harder question — *"may your agent touch my stuff?"* — needs an
+> authority on the owner's side and a negotiation to fill it. AAuth's four-party
+> mode puts that authority in the right place; what stays unspecified is how an
+> *offline* owner actually answers. UMA worked that out a decade ago. This binds
+> the two, and shows what it looks like with agent-shaped mechanics.
 
 See **[FINDINGS.md](FINDINGS.md)** for the recommendations to spec authors,
 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for the system design, and
@@ -72,9 +73,26 @@ and can revoke any of them.
 ![RO Policy Code](screenshots/RO_Policy_Monoco.png)
 *Express the resource owner policy terms that agents agree to in a form or as code*
 
+### A Sensitive Operation Pends for Alice — One Approval, One Trade
+![Trade approval](screenshots/Trade_Approval_Identified.png)
+*An ask-me tier holds the request until Alice taps. The agent is **identified** — its `aauth:…@ps.uma.lab` identity was verified against its issuer's published keys, not claimed — and her approval releases a single-use grant bound to exactly this order.*
+
+### Discovery, Split Into Public and Protected (RFC 9728)
+![Registration before and after PRM](docs/prm-at-a-glance.svg)
+*Registration flips from pushed to pulled; the challenge gains a second witness; the ticket keeps its job*
+
+![Protected Resource Metadata](screenshots/prm-metadata.png)
+*The resource's public metadata is **structural**: tool surfaces and scopes, the owner's authorization server, `jwks_uri`, `signed_metadata` — and a pointer to the protected owner-resources endpoint. Whose resources these are is deliberately not here.*
+
+![Owner resources are protected](screenshots/prm-as-only.png)
+*The owner-resources listing refuses anyone who can't prove they're the owner's authorization server — "a kind of protected webfinger for Alice's stuff"*
+
+![Resource servers and pulled registry](screenshots/prm-myact.png)
+*Alice's view of both standing relationships: the gateway holding a PAT issued in her name (revocable), and every protected resource her AS **pulled** from the gateway's published metadata (`Source: published · pulled`)*
+
 ### Activity Ledger
-![Activity Ledger](screenshots/ActivityLedger.png)
-*Track all agent activity live in the ledger*
+![Activity Ledger](screenshots/Activity_Ledger_Identified.png)
+*The full trail of one afternoon: what the agent **promised** (the signed terms, hash and all), what Alice **personally approved** (and denied), and what was actually **touched** — every row correlated by its negotiation id*
 
 ## Quick start
 
@@ -123,10 +141,14 @@ mvn package       # all service jars
 
 ## How it works, briefly
 
-An agent calls a tool through the gateway and is challenged with a permission
-ticket. It presents the ticket to Alice's authorization server, which dictates
-the terms it requires; the agent signs those terms as an intent contract and
-commits. For a known agent under a permissive tier the grant is immediate; for
+Before anything else, the agent can read the resource's published metadata
+(RFC 9728): who the authorization server is and what tool surfaces exist —
+though never *whose* they are; that lives behind a protected listing only
+Alice's authorization server may query. An agent then calls a tool through
+the gateway and is challenged with a permission ticket (the challenge names
+the metadata, and the agent checks the two against each other). It presents
+the ticket to Alice's authorization server, which dictates the terms it
+requires; the agent signs those terms as an intent contract and commits. For a known agent under a permissive tier the grant is immediate; for
 a new agent or a sensitive action the request pends until Alice approves in her
 portal. The grant is a proof-of-possession token scoped to exactly what was
 agreed. Full detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

@@ -33,6 +33,8 @@ final class Upstream {
     private String sessionId;
     private long id;
     private boolean initialized;
+    private Map<String, Object> prm;
+    private boolean prmFetched;
 
     Upstream(HttpClient client, AgentKeys keys, String gateway,
              Consumer<String> log, Consumer<String> onReceipt) {
@@ -101,6 +103,40 @@ final class Upstream {
         }
     }
 
+    /**
+     * Beat 0 — the resource's RFC 9728 metadata, fetched once. Names the
+     * owner's AS and the protected tool surfaces before any call. Discovery is
+     * declarative; the challenge remains authoritative when it is unavailable.
+     */
+    private synchronized Map<String, Object> resourceMetadata() {
+        if (prmFetched) {
+            return prm;
+        }
+        prmFetched = true;
+        String url = GrantClient.wellKnownPrmUrl(gateway);
+        try {
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+            HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+            Map<String, Object> doc = MAPPER.readValue(response.body(),
+                    new TypeReference<>() {});
+            prm = GrantClient.validateResourceMetadata(doc, gateway, null);
+            Object servers = doc.get("authorization_servers");
+            int surfaces = doc.get("tool_surfaces") instanceof List<?> list ? list.size() : 0;
+            log.accept("beat 0: resource metadata at " + url + " — AS " + servers
+                    + ", " + surfaces + " tool surfaces");
+        } catch (GrantClient.DiscoveryMismatchException e) {
+            throw e;
+        } catch (IOException | InterruptedException | RuntimeException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.accept("beat 0: resource metadata unavailable (" + e.getMessage()
+                    + "); continuing challenge-driven");
+        }
+        return prm;
+    }
+
     private synchronized void ensureInitialized() {
         if (initialized) {
             return;
@@ -133,6 +169,16 @@ final class Upstream {
                         + truncate(reply.raw(), 200));
             }
             log.accept("challenged by " + challenge.asUri() + "; negotiating");
+            Map<String, Object> metadata = resourceMetadata();
+            if (metadata != null) {
+                try {
+                    GrantClient.validateResourceMetadata(metadata, gateway, challenge.asUri());
+                    log.accept("challenge corroborated against the resource's "
+                            + "published metadata");
+                } catch (GrantClient.DiscoveryMismatchException e) {
+                    throw new IllegalStateException("refusing to negotiate: " + e.getMessage());
+                }
+            }
             String rpt = GrantClient.runGrant(client, challenge.asUri(), challenge.ticket(),
                     keys, approveTerms, operation, log, onReceipt, 120);
             Map<String, String> headers = GrantClient.signedHeaders(

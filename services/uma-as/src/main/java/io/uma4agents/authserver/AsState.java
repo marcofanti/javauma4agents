@@ -69,6 +69,7 @@ public class AsState {
         rs.put("status", "active");
         rs.put("consented", "seeded at provisioning (Alice linked her brokerage)");
         rs.put("last_pat_issued", null);
+        rs.put("resource_uri", config.rsResourceUri);
         rsClients.put(config.rsClientId, rs);
     }
 

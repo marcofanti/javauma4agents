@@ -32,6 +32,19 @@ public class AsConfig {
             Arrays.asList(env("UMA_AS_OWNER_CLIENTS", "alice-portal").split(",")));
     public final String rsClientId = env("UMA_AS_RS_CLIENT_ID", "meridian-gateway");
     public final String rsClientSecret = env("UMA_AS_RS_CLIENT_SECRET", "gateway-dev-secret");
+    /**
+     * push: the RS registers its resources here (classic FedAuthz /rreg).
+     * pull: this AS <em>reads</em> the RS's published metadata — public
+     * structure from the RFC 9728 document, owner-bound instances from the
+     * protected owner-resources endpoint — and materializes its registry.
+     */
+    public final String registrationMode = env("REGISTRATION_MODE", "push");
+    /**
+     * Where the RS publishes itself — the root of declarative registration
+     * (RFC 9728 metadata is derived from this identifier).
+     */
+    public final String rsResourceUri =
+            env("UMA_AS_RS_RESOURCE_URI", "https://gateway.uma.lab/mcp");
     public final String caBundle = env("UMA4A_CA_BUNDLE", null);
     /** The RPT audience — hardcoded in the Python reference, configurable here. */
     public final String rptAudience = env("UMA_RPT_AUDIENCE", "https://gateway.uma.lab");

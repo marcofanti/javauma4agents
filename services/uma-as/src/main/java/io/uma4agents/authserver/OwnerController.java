@@ -135,6 +135,7 @@ public class OwnerController {
             item.put("tier", tierEntry == null ? null : tierEntry.getKey());
             item.put("tier_name", tierEntry == null ? null : tierEntry.getValue().get("name"));
             item.put("ask_me", tierEntry == null ? null : tierEntry.getValue().get("ask_me"));
+            item.put("registered_via", desc.getOrDefault("registered_via", "push"));
             out.add(item);
         });
         out.sort(Comparator.comparing(r -> String.valueOf(r.get("_id"))));
