@@ -190,11 +190,10 @@ license.
 Two things worth reading there before you build on this:
 
 - The **AAuth Person Server** is cloned from
-  [christian-posta/aauth-person-server](https://github.com/christian-posta/aauth-person-server),
-  which publishes no license. It is not redistributed by this project, and the
-  default demo path (pseudonymous agent keys) does not need it. If you want the
-  identified-agent path for anything beyond local evaluation, get the author's
-  permission or substitute your own AAuth person/agent server.
+  [christian-posta/aauth-person-server](https://github.com/christian-posta/aauth-person-server)
+  (Apache-2.0) at the ref pinned in the Makefile and built locally — it is
+  fetched, not vendored. The default demo path (pseudonymous agent keys) does
+  not need it.
 - **Grafana and Loki** are AGPL-3.0, used unmodified as container images for
   observability only.
 

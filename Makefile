@@ -3,7 +3,7 @@ SHELL=/bin/bash -o pipefail
 .PHONY: init dns-setup up down logs smoke-test reset fetch-upstream
 
 # Pinned upstream ref for the AAuth person server (built, not vendored)
-PERSON_SERVER_REF = 4e05247
+PERSON_SERVER_REF = 18d9558
 
 ## fetch-upstream: clone the pinned AAuth person server into aauth/upstream/
 fetch-upstream:
