@@ -1,0 +1,53 @@
+First Java aggregate after make reset. All checks serial.
+[INFO] BUILD SUCCESS
+=== shim-test
+PASS: shim exposes the vault tools
+PASS: first contact connects, then tier 1 grants
+PASS: terms were rendered inside the agent
+PASS: tier 3 pends, Alice approves, trade executes
+PASS: standing-config fallback (no elicitation client)
+PASS: call completes after the owner decides
+PASS: the wait was handed back to Bob, not held open
+PASS: the pend names a principal Bob is not and cannot reach
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+PASS: a second implementation, sharing no code with the first, ran the four beats.
+=== decline-check
+=== demo-acts-a
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+=== demo-acts-b
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+=== flow-check
+PASS: agent identity stayed on the requesting side.
+=== embedded-check
+PASS: a resource enforced its owner's UMA policy with no gateway
+=== smoke-alice
+=== fixture
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+=== rotation-check
+PASS: the authority rotated its key and nothing it had issued stopped working.
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+=== store-test
+[INFO] Tests run: 116, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+=== intent-check
+PASS: her terms could not be signed weaker than she wrote them, the
+=== assurance-check
+PASS: assurance tightened and never widened, standing was per tier,
+=== consequence-check
+=== first-party-check
+PASS: an agent she activated herself ran the same grant as anyone
+=== subagent-check
+PASS: sub-agents were admitted without a second first contact,
+=== demo-all-sim
+PASS: the requested acts completed
+=== establishment-check
+PASS: a resource server and an authority that were never
+=== multi-owner-check
+PASS: 2 owners of one resource server, each with her own

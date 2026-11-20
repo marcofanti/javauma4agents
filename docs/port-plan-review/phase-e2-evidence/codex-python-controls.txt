@@ -1,0 +1,13 @@
+org-check exit 0
+clearance-check exit 0
+rego-test exit 0
+
+org-check
+104 passed, 0 failed
+PASS: one resource server, three owners of record. Alice's accounts
+
+clearance-check
+20 passed, 0 failed
+
+rego-test
+rego: every shared pattern vector matches as the vectors say

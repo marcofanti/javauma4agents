@@ -1,0 +1,37 @@
+
+Final pinned Python gate results
+intent-check exit 0
+assurance-check exit 0
+consequence-check exit 0
+first-party-check exit 0
+subagent-check exit 0
+demo-all exit 0
+
+intent-check
+42 passed, 0 failed
+PASS: her terms could not be signed weaker than she wrote them, the
+
+assurance-check
+26 passed, 0 failed
+PASS: assurance tightened and never widened, standing was per tier,
+
+consequence-check
+22 passed, 0 failed
+
+first-party-check
+14 passed, 0 failed
+PASS: an agent she activated herself ran the same grant as anyone
+
+subagent-check
+22 passed, 0 failed
+PASS: sub-agents were admitted without a second first contact,
+
+demo-all
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+== Act 2 (midday): transaction history — watch the terms tighten ==
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+== Act 3 interlude: someone replays the grant unsigned ==
+== Act 3 epilogue: the same RPT, tried again ==
+== Act 4 (evening): Alice's own agent, and the same tier ==
+== Act 4 (evening): Alice revokes the agent ==
+PASS: the requested acts completed

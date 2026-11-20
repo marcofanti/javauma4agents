@@ -1,0 +1,881 @@
+{
+  "mandates": [
+    {
+      "input": {
+        "resources": [
+          "book/get",
+          "book/write"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab"
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab"
+          }
+        ],
+        "rule": {
+          "kind": "all"
+        }
+      },
+      "normal": {
+        "resources": [
+          "book/get",
+          "book/write"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 1
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "all",
+          "threshold": 2
+        },
+        "total_weight": 2
+      },
+      "digest": "s256:-7xMKxCjo0ph4qDNnJ4tkQHHxQohpCBEv5GX5-ppu2U",
+      "summary": [
+        "Held jointly by alice, carol, over book/get, book/write.",
+        "Every holder has to allow a request before it is granted. Any one of you can stop it.",
+        "The terms an agent must accept are every holder's terms at once: the shortest expiry any of you set, only the scopes all of you offer, and every prohibition any of you wrote.",
+        "No holder can see another's terms over anything else, or act for her anywhere but here."
+      ],
+      "counts": [
+        {
+          "votes": {},
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "alice",
+              "carol"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 1,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "carol"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "carol": "refuse"
+          },
+          "result": {
+            "effect": "refuse",
+            "for": 0,
+            "against": 1,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "alice"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow",
+            "carol": "allow"
+          },
+          "result": {
+            "effect": "allow",
+            "for": 2,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "refuse",
+            "carol": "allow",
+            "dana": "refuse"
+          },
+          "result": {
+            "effect": "refuse",
+            "for": 1,
+            "against": 1,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [],
+            "rule": "all"
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "resources": "book/*",
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 3
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 2
+          },
+          {
+            "owner": "dana",
+            "issuer": "https://dana-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "any"
+        }
+      },
+      "normal": {
+        "resources": [
+          "book/*"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 3
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 2
+          },
+          {
+            "owner": "dana",
+            "issuer": "https://dana-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "any",
+          "threshold": 1
+        },
+        "total_weight": 6
+      },
+      "digest": "s256:0Oocq3BLVanCrxYikCqsJGDNsiU-RO8Dy8fk3XhSpaE",
+      "summary": [
+        "Held jointly by alice, carol, dana, over book/*.",
+        "Any one holder can release it alone. You are trusting each other's judgement, not only your own.",
+        "The terms an agent must accept are every holder's terms at once: the shortest expiry any of you set, only the scopes all of you offer, and every prohibition any of you wrote.",
+        "No holder can see another's terms over anything else, or act for her anywhere but here."
+      ],
+      "counts": [
+        {
+          "votes": {},
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 1,
+            "total_weight": 6,
+            "outstanding": [
+              "alice",
+              "carol",
+              "dana"
+            ],
+            "rule": "any"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow"
+          },
+          "result": {
+            "effect": "allow",
+            "for": 3,
+            "against": 0,
+            "threshold": 1,
+            "total_weight": 6,
+            "outstanding": [
+              "carol",
+              "dana"
+            ],
+            "rule": "any"
+          }
+        },
+        {
+          "votes": {
+            "carol": "refuse"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 2,
+            "threshold": 1,
+            "total_weight": 6,
+            "outstanding": [
+              "alice",
+              "dana"
+            ],
+            "rule": "any"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow",
+            "carol": "allow"
+          },
+          "result": {
+            "effect": "allow",
+            "for": 5,
+            "against": 0,
+            "threshold": 1,
+            "total_weight": 6,
+            "outstanding": [
+              "dana"
+            ],
+            "rule": "any"
+          }
+        },
+        {
+          "votes": {
+            "alice": "refuse",
+            "carol": "allow",
+            "dana": "refuse"
+          },
+          "result": {
+            "effect": "allow",
+            "for": 2,
+            "against": 4,
+            "threshold": 1,
+            "total_weight": 6,
+            "outstanding": [],
+            "rule": "any"
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "resources": "book/*",
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 3
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 2
+          },
+          {
+            "owner": "dana",
+            "issuer": "https://dana-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "threshold",
+          "threshold": 4
+        }
+      },
+      "normal": {
+        "resources": [
+          "book/*"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 3
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 2
+          },
+          {
+            "owner": "dana",
+            "issuer": "https://dana-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "threshold",
+          "threshold": 4
+        },
+        "total_weight": 6
+      },
+      "digest": "s256:O4bFvxIhzio7Z3ILwhkDV4xa5VGke0emn1CjMr056p8",
+      "summary": [
+        "Held jointly by alice, carol, dana, over book/*.",
+        "It takes 4 of 6 to release it, and the holders do not carry equal weight.",
+        "The terms an agent must accept are every holder's terms at once: the shortest expiry any of you set, only the scopes all of you offer, and every prohibition any of you wrote.",
+        "No holder can see another's terms over anything else, or act for her anywhere but here."
+      ],
+      "counts": [
+        {
+          "votes": {},
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 4,
+            "total_weight": 6,
+            "outstanding": [
+              "alice",
+              "carol",
+              "dana"
+            ],
+            "rule": "threshold"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 3,
+            "against": 0,
+            "threshold": 4,
+            "total_weight": 6,
+            "outstanding": [
+              "carol",
+              "dana"
+            ],
+            "rule": "threshold"
+          }
+        },
+        {
+          "votes": {
+            "carol": "refuse"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 2,
+            "threshold": 4,
+            "total_weight": 6,
+            "outstanding": [
+              "alice",
+              "dana"
+            ],
+            "rule": "threshold"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow",
+            "carol": "allow"
+          },
+          "result": {
+            "effect": "allow",
+            "for": 5,
+            "against": 0,
+            "threshold": 4,
+            "total_weight": 6,
+            "outstanding": [
+              "dana"
+            ],
+            "rule": "threshold"
+          }
+        },
+        {
+          "votes": {
+            "alice": "refuse",
+            "carol": "allow",
+            "dana": "refuse"
+          },
+          "result": {
+            "effect": "refuse",
+            "for": 2,
+            "against": 4,
+            "threshold": 4,
+            "total_weight": 6,
+            "outstanding": [],
+            "rule": "threshold"
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "resources": [
+          "\ud800\udc00/read",
+          "\ue000/read"
+        ],
+        "holders": [
+          {
+            "owner": "\ud800\udc00",
+            "issuer": "https://a.example"
+          },
+          {
+            "owner": "\ue000",
+            "issuer": "https://b.example"
+          }
+        ]
+      },
+      "normal": {
+        "resources": [
+          "\ud800\udc00/read",
+          "\ue000/read"
+        ],
+        "holders": [
+          {
+            "owner": "\ud800\udc00",
+            "issuer": "https://a.example",
+            "weight": 1
+          },
+          {
+            "owner": "\ue000",
+            "issuer": "https://b.example",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "all",
+          "threshold": 2
+        },
+        "total_weight": 2
+      },
+      "digest": "s256:5KeTBLOCJ02-nAnz303HPA1r1UnXKNwqTI1jR-zbg1M",
+      "summary": [
+        "Held jointly by \ud800\udc00, \ue000, over \ud800\udc00/read, \ue000/read.",
+        "Every holder has to allow a request before it is granted. Any one of you can stop it.",
+        "The terms an agent must accept are every holder's terms at once: the shortest expiry any of you set, only the scopes all of you offer, and every prohibition any of you wrote.",
+        "No holder can see another's terms over anything else, or act for her anywhere but here."
+      ],
+      "counts": [
+        {
+          "votes": {},
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "carol": "refuse"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow",
+            "carol": "allow"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "refuse",
+            "carol": "allow",
+            "dana": "refuse"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "resources": [
+          "\ue000/read",
+          "\ud800\udc00/read"
+        ],
+        "holders": [
+          {
+            "owner": "\ue000",
+            "issuer": "https://b.example"
+          },
+          {
+            "owner": "\ud800\udc00",
+            "issuer": "https://a.example"
+          }
+        ]
+      },
+      "normal": {
+        "resources": [
+          "\ue000/read",
+          "\ud800\udc00/read"
+        ],
+        "holders": [
+          {
+            "owner": "\ue000",
+            "issuer": "https://b.example",
+            "weight": 1
+          },
+          {
+            "owner": "\ud800\udc00",
+            "issuer": "https://a.example",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "all",
+          "threshold": 2
+        },
+        "total_weight": 2
+      },
+      "digest": "s256:5KeTBLOCJ02-nAnz303HPA1r1UnXKNwqTI1jR-zbg1M",
+      "summary": [
+        "Held jointly by \ue000, \ud800\udc00, over \ue000/read, \ud800\udc00/read.",
+        "Every holder has to allow a request before it is granted. Any one of you can stop it.",
+        "The terms an agent must accept are every holder's terms at once: the shortest expiry any of you set, only the scopes all of you offer, and every prohibition any of you wrote.",
+        "No holder can see another's terms over anything else, or act for her anywhere but here."
+      ],
+      "counts": [
+        {
+          "votes": {},
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "carol": "refuse"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "allow",
+            "carol": "allow"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        },
+        {
+          "votes": {
+            "alice": "refuse",
+            "carol": "allow",
+            "dana": "refuse"
+          },
+          "result": {
+            "effect": "pending",
+            "for": 0,
+            "against": 0,
+            "threshold": 2,
+            "total_weight": 2,
+            "outstanding": [
+              "\ue000",
+              "\ud800\udc00"
+            ],
+            "rule": "all"
+          }
+        }
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "input": {
+        "resources": "book/*",
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 3
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 2
+          },
+          {
+            "owner": "dana",
+            "issuer": "https://dana-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "any"
+        }
+      },
+      "floor": 2,
+      "error": "this resource requires at least 2 holders to agree to release it, and under this mandate 1 could. That floor is not the holders' to lower."
+    },
+    {
+      "input": {
+        "resources": "book/*",
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": 3
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab",
+            "weight": 2
+          },
+          {
+            "owner": "dana",
+            "issuer": "https://dana-as.uma.lab",
+            "weight": 1
+          }
+        ],
+        "rule": {
+          "kind": "threshold",
+          "threshold": 4
+        }
+      },
+      "floor": 3,
+      "error": "this resource requires at least 3 holders to agree to release it, and under this mandate 2 could. That floor is not the holders' to lower."
+    },
+    {
+      "input": {
+        "resources": [
+          "book/get",
+          "book/write"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab"
+          },
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab"
+          }
+        ],
+        "rule": {
+          "kind": "all"
+        }
+      },
+      "floor": 0,
+      "error": "'alice' appears twice \u2014 a holder counted twice is a holder who outvotes the others by being listed again"
+    },
+    {
+      "input": {
+        "resources": [
+          "book/get",
+          "book/write"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab",
+            "weight": true
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab"
+          }
+        ],
+        "rule": {
+          "kind": "all"
+        }
+      },
+      "floor": 0,
+      "error": "holder 'alice' needs an integer weight of 1 or more"
+    },
+    {
+      "input": {
+        "resources": [
+          "book/get",
+          "book/write"
+        ],
+        "holders": [
+          {
+            "owner": "alice",
+            "issuer": "https://alice-as.uma.lab"
+          },
+          {
+            "owner": "carol",
+            "issuer": "https://carol-as.uma.lab"
+          }
+        ],
+        "rule": {
+          "kind": "threshold",
+          "threshold": 3
+        }
+      },
+      "floor": 0,
+      "error": "rule.threshold must be between 1 and 2, the total weight of the holders"
+    }
+  ],
+  "fold": {
+    "quotes": [
+      {
+        "name": "book",
+        "resources": [
+          "book/*"
+        ],
+        "ask_me": false,
+        "terms": {
+          "expires_in": 3600,
+          "scope": [
+            "read",
+            "write"
+          ],
+          "prohibited": [
+            "keep"
+          ]
+        }
+      },
+      {
+        "name": "book",
+        "resources": [
+          "book/*"
+        ],
+        "ask_me": true,
+        "terms": {
+          "expires_in": 120,
+          "scope": [
+            "read"
+          ],
+          "prohibited": [
+            "share"
+          ]
+        }
+      }
+    ],
+    "resources": [
+      "book/*"
+    ],
+    "result": {
+      "name": "book",
+      "resources": [
+        "book/*"
+      ],
+      "ask_me": true,
+      "terms": {
+        "expires_in": 120,
+        "scope": [
+          "read"
+        ],
+        "prohibited": [
+          "keep",
+          "share"
+        ]
+      }
+    }
+  }
+}

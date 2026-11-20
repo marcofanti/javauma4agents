@@ -1,0 +1,39 @@
+docker compose --profile test run --rm first-party-check
+ Container claude-phase-d-first-party-check-run-8099660cf010 Creating
+ Container claude-phase-d-first-party-check-run-8099660cf010 Created
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+
+== Claiming an origin is a decision, and only half of one ==
+   ok   her origin shows as hers
+   ok   Bob's does not
+   ok   an https origin is required
+
+== The impostor: her origin, a key she never published ==
+   ok   it connects like any stranger
+   ok   but the trade tier still asks her about it
+
+== Her own agent: claimed origin, and a key she published ==
+   ok   her operator published its key
+   ok   first contact still pends, and she connects it
+   ok   her rule then grants a trade without asking
+
+== The same rule, the same tier, somebody else's agent ==
+   ok   an attested agent that is not hers is still asked
+
+== Disclaiming takes effect, and takes nothing away ==
+   ok   the origin is no longer hers
+   ok   her agent is asked again on the very next request
+   ok   and its connection survives — the claim bought friction, not access
+
+== And the rule is hers to write, not the agent's to earn ==
+   ok   a rule relaxing on what the agent showed is still unstorable
+   ok   a rule relaxing on whom she activated is storable
+
+14 passed, 0 failed
+
+PASS: an agent she activated herself ran the same grant as anyone
+      else's, met less friction only where she had said so, and
+      an impostor naming her origin got none of it.

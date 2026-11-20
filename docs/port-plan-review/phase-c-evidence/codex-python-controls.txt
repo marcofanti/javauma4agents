@@ -1,0 +1,57 @@
+Independent Phase C Python controls
+Upstream pin: 77649287dc883b75ef563c59f96de8613ecf10d0
+Selected output only. All commands exited 0.
+
+PostgreSQL engine
+17.12
+
+Pinned store control (memory and real Postgres)
+memory store
+  ok   isolation: Carol's events do not reach Alice's stream
+postgres store (pg:5432/u4a)
+  ok   isolation: Carol's events do not reach Alice's stream
+  ok   upgrade: an older database is refused at startup, by name
+236 passed
+
+Pinned AS and PEP assertion suites
+62 passed, 0 failed
+89 passed, 0 failed
+
+Pinned gateway assertion suite
+24 passed, 0 failed
+
+Pinned live rotation check
+== Before the rotation: a grant, kept ==
+   ok   a grant is issued and spends
+== After the rotation ==
+   ok   the authority publishes the new key and the retired one
+   ok   a grant signed before the rotation still spends
+   ok   a grant issued after it carries the new kid
+   ok   the resource server accepted a pull signed with the new key
+PASS: the authority rotated its key and nothing it had issued stopped working.
+Restoring the original signing key and the memory store
+
+Independent post-rotation inspection
+Restored reference AS uses memory and publishes only the original signing key.
+
+Supplemental two-pool PostgreSQL reference assertions (exit 0)
+PASS: one ticket winner across two Postgres pools, family preserved and owner-scoped
+PASS: one competing owner decision across two Postgres pools
+PASS: one RPT burn across two Postgres pools and only for its owner
+PASS: Alice receives her event from the other pool and no Carol event
+
+Separately booted pinned AS with old single-owner keys (expected startup rejection)
+Obsolete-schema startup exit=3
+Affected tables named: negotiations, tickets, tiers
+
+Supplemental wire control with separate AS processes on one Postgres database (exit 0)
+PASS: Alice's pending event crossed AS processes and did not reach Carol
+PASS: exactly one owner decision accepted when racing two live AS processes
+PASS: exactly one single-use RPT consumption accepted across the two processes
+PASS: policy edit is visible from the other replica before restart
+PASS: both restarted AS processes retained Alice's policy and ledger without reseeding or altering Carol
+
+Updated wire check with opposing decisions (exit 0)
+PASS: Alice's pending event crossed AS processes and did not reach Carol
+PASS: exactly one competing approval/denial accepted across two live AS processes
+PASS: exactly one single-use RPT consumption accepted across the two processes

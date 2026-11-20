@@ -1,0 +1,79 @@
+[Excerpt from the original test run]
+19:50:47 /Applications/Xcode.app/Contents/Developer/usr/bin/make --no-print-directory check-unit
+19:50:47 Vendored tree matches 39 pinned upstream blobs
+19:50:47 mvn -B -ntp verify
+19:50:48 [INFO] Scanning for projects...
+19:50:48 [INFO] Loaded 24552 auto-discovered prefixes for remote repository central (prefixes-central.txt)
+19:50:48 [INFO] ------------------------------------------------------------------------
+19:50:48 [INFO] Reactor Build Order:
+19:50:48 [INFO]
+[43 lines omitted]
+19:50:49 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.144 s -- in io.uma4agents.common.CompactJwsTest
+[1 lines omitted]
+19:50:49 [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in io.uma4agents.common.PyJsonConformanceTest
+[1 lines omitted]
+19:50:49 [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.099 s -- in io.uma4agents.common.EdDsaInteropTest
+[1 lines omitted]
+19:50:49 [INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in io.uma4agents.common.HttpSignatureTest
+[3 lines omitted]
+19:50:49 [INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[29 lines omitted]
+19:50:50 [INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in io.uma4agents.pep.core.EnforcerSettingsTest
+[46 lines omitted]
+19:50:50 [INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.211 s -- in io.uma4agents.pep.core.EnforcerTest
+[3 lines omitted]
+19:50:50 [INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[86 lines omitted]
+19:50:51 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.018 s -- in io.uma4agents.authserver.IntrospectionResponseTest
+[3 lines omitted]
+19:50:51 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[63 lines omitted]
+19:50:51 [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.088 s -- in io.uma4agents.operator.OperatorControllerTest
+[3 lines omitted]
+19:50:51 [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[34 lines omitted]
+19:50:53 [INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.799 s -- in io.uma4agents.agent.GrantClientTest
+[3 lines omitted]
+19:50:53 [INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+[82 lines omitted]
+19:50:53 [INFO] BUILD SUCCESS
+[13 lines omitted]
+19:50:54 PASS: shim exposes the vault tools
+[19 lines omitted]
+19:50:57 PASS: first contact connects, then tier 1 grants
+19:50:57 PASS: terms were rendered inside the agent
+[18 lines omitted]
+19:51:00 PASS: tier 3 pends, Alice approves, trade executes
+[14 lines omitted]
+19:51:06 PASS: standing-config fallback (no elicitation client)
+[42 lines omitted]
+19:51:18 PASS: call completes after the owner decides
+19:51:18 PASS: the wait was handed back to Bob, not held open
+19:51:18 PASS: the pend names a principal Bob is not and cannot reach
+[1 lines omitted]
+19:51:21 shim-test: 8 passed, 0 failed
+[48 lines omitted]
+19:51:26 11 passed, 0 failed
+[1 lines omitted]
+19:51:26 PASS: a second implementation, sharing no code with the first, ran the four beats.
+[11 lines omitted]
+19:51:35 4 passed, 0 failed
+[34 lines omitted]
+19:51:47 PASS: the requested acts completed
+[28 lines omitted]
+19:51:55 PASS: the requested acts completed
+[38 lines omitted]
+19:52:07 PASS: the requested acts completed
+[33 lines omitted]
+19:52:16 PASS: the requested acts completed
+[71 lines omitted]
+19:52:34 PASS: a resource enforced its owner's UMA policy with no gateway
+[49 lines omitted]
+19:52:40   person-server: OK
+19:52:40 ==> Grafana...
+19:52:40   grafana: OK
+19:52:40 ==> Loki has protocol events from this project's PEP...
+19:52:40   loki events: OK (javauma4agents-uma-pep-1)
+19:52:40 ==> ... and an allowed call there carries the caller's W3C trace context...
+19:52:40   trace events: OK (javauma4agents-uma-pep-1)
+19:52:40 make -j8 check-all exit=0

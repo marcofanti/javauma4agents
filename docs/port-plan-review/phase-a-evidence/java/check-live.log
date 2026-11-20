@@ -1,0 +1,119 @@
+[Excerpt from the original test run]
+docker compose --profile test run --rm shim-test
+== elicitation-capable client (the Claude Code case) ==
+uma4a launcher: exec java -jar /app/shim.jar
+[agent-shim] proxying https://gateway.uma.lab/mcp; keystore /tmp/shim-key-elicit.pem
+PASS: shim exposes the vault tools
+[agent-shim] challenged by https://alice-as.uma.lab; negotiating
+[agent-shim] beat 0: resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp — AS [https://alice-as.uma.lab]
+[agent-shim] challenge corroborated against the resource's published metadata
+[16 lines omitted]
+PASS: first contact connects, then tier 1 grants
+PASS: terms were rendered inside the agent
+[18 lines omitted]
+PASS: tier 3 pends, Alice approves, trade executes
+== client without elicitation (the Claude Desktop case today) ==
+[13 lines omitted]
+PASS: standing-config fallback (no elicitation client)
+== the pend as a rendered wait, not a held-open call ==
+[41 lines omitted]
+PASS: call completes after the owner decides
+PASS: the wait was handed back to Bob, not held open
+PASS: the pend names a principal Bob is not and cannot reach
+[1 lines omitted]
+shim-test: 8 passed, 0 failed
+[16 lines omitted]
+== Beat 1: the challenge ==
+[3 lines omitted]
+== Beat 0: corroborate the authority ==
+[4 lines omitted]
+== Beats 2–4: terms, agreement, the owner, the grant ==
+[8 lines omitted]
+== The call, proof of possession ==
+[4 lines omitted]
+== Declining ==
+[4 lines omitted]
+11 passed, 0 failed
+[1 lines omitted]
+PASS: a second implementation, sharing no code with the first, ran the four beats.
+[7 lines omitted]
+4 passed, 0 failed
+[6 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+[14 lines omitted]
+PASS: the requested acts completed
+[6 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 2 (midday): transaction history — watch the terms tighten ==
+[10 lines omitted]
+PASS: the requested acts completed
+[6 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+[12 lines omitted]
+== Act 3 interlude: someone replays the grant unsigned ==
+[4 lines omitted]
+== Act 3 epilogue: the same RPT, tried again ==
+[2 lines omitted]
+PASS: the requested acts completed
+[6 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 4 (evening): Alice revokes the agent ==
+[15 lines omitted]
+PASS: the requested acts completed
+[4 lines omitted]
+== Beat 0: the resource advertises that it enforces a grant ==
+[4 lines omitted]
+== Beat 0.5: Alice admits a resource server she has never seen ==
+[2 lines omitted]
+== Beat 1: unauthorized tools/call, straight to the resource ==
+[4 lines omitted]
+== What the in-process host refuses, and how ==
+[6 lines omitted]
+== Beats 2-4: the same negotiation at Alice's AS ==
+[9 lines omitted]
+== The authorized call, enforced in-process ==
+[3 lines omitted]
+== A single-use grant: the forged replay comes first ==
+[11 lines omitted]
+== And a forged signature still fails, in-process ==
+[2 lines omitted]
+PASS: a resource enforced its owner's UMA policy with no gateway
+[2 lines omitted]
+  uma-as: OK
+[1 lines omitted]
+  uma_profiles_supported: OK
+[1 lines omitted]
+  advertised formats: OK
+[1 lines omitted]
+  jwks: OK
+[1 lines omitted]
+  keycloak: OK
+[1 lines omitted]
+  resource metadata (alice): OK
+[1 lines omitted]
+  gateway challenge: OK
+[1 lines omitted]
+  ext_authz body passthrough: OK
+[1 lines omitted]
+  truncated body: OK
+[1 lines omitted]
+  portal: OK
+[1 lines omitted]
+  agent CIMD: OK
+[1 lines omitted]
+  signatures directory: OK
+[1 lines omitted]
+  person-server: OK
+==> Grafana...
+  grafana: OK
+==> Loki has protocol events...
+  loki events: OK
+==> ... and an allowed call carries the caller's W3C trace context...
+  trace events: OK
+check-live exit=0

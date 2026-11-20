@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
  */
 public final class DemoDriver {
 
-    private static final String GATEWAY_AUTHORITY = "gateway.uma.lab";
-    private static final String MCP_PATH = "/mcp";
+    private static final GrantClient.Target TARGET =
+            new GrantClient.Target("POST", "gateway.uma.lab", "/mcp");
     private static final long STANDING_MAX_EXPIRES = 7L * 24 * 3600;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -122,7 +122,7 @@ public final class DemoDriver {
         String prmUrl = GrantClient.wellKnownPrmUrl(args.get("gateway"));
         try {
             prm = GrantClient.validateResourceMetadata(
-                    getJson(prmUrl), args.get("gateway"), null);
+                    getJson(prmUrl), args.get("gateway"), null, null);
         } catch (Exception e) {
             System.out.println("resource metadata unavailable: " + e.getMessage());
             return 1;
@@ -181,8 +181,7 @@ public final class DemoDriver {
                 java.util.function.Consumer<String> replayWithStolenToken = rpt -> {
                     System.out.println(
                             "\n== Act 3 interlude: someone replays the grant unsigned ==");
-                    Map<String, String> stolen = GrantClient.signedHeaders(
-                            "POST", GATEWAY_AUTHORITY, MCP_PATH, rpt, keys);
+                    Map<String, String> stolen = GrantClient.signedHeaders(TARGET, rpt, keys, null);
                     // Must match signedHeaders' exact key casing — a lowercase
                     // "signature" is a second header, not an override, and the
                     // forgery silently never happens.
@@ -205,8 +204,7 @@ public final class DemoDriver {
                 showResult(out.payload());
 
                 System.out.println("\n== Act 3 epilogue: the same RPT, tried again ==");
-                Map<String, String> headers = GrantClient.signedHeaders(
-                        "POST", GATEWAY_AUTHORITY, MCP_PATH, out.rpt(), keys);
+                Map<String, String> headers = GrantClient.signedHeaders(TARGET, out.rpt(), keys, null);
                 Map<String, Object> params = new LinkedHashMap<>();
                 params.put("name", "execute_trade");
                 params.put("arguments", order);
@@ -265,7 +263,7 @@ public final class DemoDriver {
         if (prm != null) {
             try {
                 GrantClient.validateResourceMetadata(prm, args.get("gateway"),
-                        challenge.asUri());
+                        challenge.asUri(), challenge.resourceMetadata());
                 say("challenge corroborated: as_uri is among the resource's "
                         + "published authorization servers");
             } catch (GrantClient.DiscoveryMismatchException e) {
@@ -281,15 +279,29 @@ public final class DemoDriver {
             approver.start();
         }
 
-        String rpt = GrantClient.runGrant(client, challenge.asUri(), challenge.ticket(), keys,
-                this::approveTerms, operation, DemoDriver::say, DemoDriver::holdReceipt, 120);
+        String rpt = GrantClient.runGrant(client, challenge, keys,
+                new GrantClient.Contribution(operation, null, null), new GrantClient.Negotiator() {
+                    @Override
+                    public boolean approveTerms(Map<String, Object> template) {
+                        return DemoDriver.this.approveTerms(template);
+                    }
+
+                    @Override
+                    public void status(String message) {
+                        say(message);
+                    }
+
+                    @Override
+                    public void receipt(String jws) {
+                        holdReceipt(jws);
+                    }
+                });
 
         if (onGrant != null) {
             onGrant.accept(rpt);
         }
 
-        Map<String, String> headers = GrantClient.signedHeaders(
-                "POST", GATEWAY_AUTHORITY, MCP_PATH, rpt, keys);
+        Map<String, String> headers = GrantClient.signedHeaders(TARGET, rpt, keys, null);
         reply = session.request("tools/call", params, headers, false);
         if (reply.status() != 200) {
             throw new IllegalStateException("authorized call failed: " + reply.status()
@@ -316,8 +328,8 @@ public final class DemoDriver {
                 System.out.println("FAIL: no active connection to revoke");
                 return 1;
             }
-            Map<String, Object> revoked = ownerPost(
-                    "/owner/connections/" + handle + "/revoke");
+            Map<String, Object> revoked = ownerPost("/owner/connections/revoke",
+                    MAPPER.writeValueAsString(Map.of("handle", handle)));
             deactivated = revoked.get("rpts_deactivated") instanceof Number n
                     ? n.intValue() : 0;
         } catch (Exception e) {
@@ -330,8 +342,7 @@ public final class DemoDriver {
         // A revoked relationship is a decision the owner already made.
         // Answering 401 would invite the agent to negotiate again for an
         // outcome that is settled, so enforcement has to say so terminally.
-        Map<String, String> sig = GrantClient.signedHeaders(
-                "POST", GATEWAY_AUTHORITY, MCP_PATH, out.rpt(), keys);
+        Map<String, String> sig = GrantClient.signedHeaders(TARGET, out.rpt(), keys, null);
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("name", "get_positions");
         params.put("arguments", Map.of());
@@ -373,11 +384,12 @@ public final class DemoDriver {
         return MAPPER.readValue(response.body(), new TypeReference<>() {});
     }
 
-    private Map<String, Object> ownerPost(String path) throws Exception {
+    private Map<String, Object> ownerPost(String path, String json) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(args.get("as-internal") + path))
                 .header("Authorization", "Bearer " + ownerToken())
-                .POST(HttpRequest.BodyPublishers.noBody())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -454,7 +466,7 @@ public final class DemoDriver {
         }
         Map<String, String> form = new LinkedHashMap<>();
         form.put("grant_type", "password");
-        form.put("client_id", "alice-portal");
+        form.put("client_id", "meridian-portal");
         form.put("username", args.get("alice-username"));
         form.put("password", args.get("alice-password"));
         String encoded = form.entrySet().stream()

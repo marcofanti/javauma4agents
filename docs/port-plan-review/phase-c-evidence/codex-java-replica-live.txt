@@ -1,0 +1,23 @@
+PostgreSQL 17.12
+   forged agent signature: proof-of-possession failed: signature verification failed
+   owner request signed by a key she did not enrol: 401
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+codex-c-replica-restart.log:PASS: policy edit is visible from the other replica before restart
+codex-c-replica-restart.log:PASS: both restarted AS processes retained Alice's policy and ledger without reseeding or altering Carol
+codex-c-replica-wire.log:PASS: Alice's pending event crossed AS processes and did not reach Carol
+codex-c-replica-wire.log:PASS: exactly one competing approval/denial accepted across two live AS processes
+codex-c-replica-wire.log:PASS: exactly one single-use RPT consumption accepted across the two processes
+Java AS stale-schema exit = 1
+this database predates multi-owner: negotiations, tickets, tiers still key on a single owner's rows.
+
+Independent live replica rerun with guarded writes (exit 0)
+PASS: one original ticket raced across twelve requests on two live Alice AS instances
+PASS: the other AS accepted the replacement ticket for the same negotiation
+PASS: Alice's pending event crossed AS processes and did not reach Carol
+PASS: exactly one competing approval/denial accepted across two live AS processes
+PASS: exactly one single-use RPT consumption accepted across the two processes
+PASS: policy edit is visible from the other replica before restart
+PASS: both restarted AS processes retained Alice's policy and ledger without reseeding or altering Carol
+
+Packaged schema
+Pinned and packaged schema Git blob 2748f8cd062495376a6f0929e0e3a4c2f997527e

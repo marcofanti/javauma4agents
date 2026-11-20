@@ -1,0 +1,79 @@
+docker compose --profile test run --rm intent-check
+ Container claude-phase-d-intent-check-run-6cd111688d84 Creating
+ Container claude-phase-d-intent-check-run-6cd111688d84 Created
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+
+== The echo is checked field by field ==
+   ok   a rewritten purpose ends the negotiation
+   ok   so does dropping one of her prohibitions
+   ok   and so does helping itself to a longer expiry
+   ok   binding itself to more than she asked is allowed
+
+== What it says it is for is carried, never judged ==
+   ok   first contact pends until she answers
+   ok   her approval dialog shows the agent's own words
+   she is shown: "Suitability review before Thursday's client meeting."
+   ok   and afterwards it negotiates without disturbing her
+   ok   and the record keeps it beside what she dictated
+   ok   her purpose is still hers, not the agent's
+   ok   a reason past the cap is refused rather than stored
+   ok   markup in a reason is stored verbatim, to be escaped on render
+
+== A mandate, cited in the shape AAuth already uses ==
+   ok   a well-formed citation is accepted
+   ok   refused: an approver that is not https
+   ok   refused: a citation with no approver
+   ok   refused: a hash too short to be one
+   ok   refused: a citation that is not an object
+   ok   the citation is on the record beside her terms
+   ok   and it is kept as a reference, not as text she has to trust
+   ok   she can ask to be told when nothing set the agent this task
+   ok   but citing one can never widen access
+   ok   and it is not an assurance axis, because nothing verified it
+
+== The record answers questions about an agent ==
+   ok   both agents hold a standing connection
+   3 standing connections, each with its own trail
+   ok   one agent's trajectory is one agent's
+   ok   and holds none of the other's
+   ok   it holds what was promised and what was touched
+   one agent's trajectory: ['approved', 'connected', 'promised', 'touched']
+   ok   an unknown agent has an empty trajectory
+   ok   a decline is recorded with nobody to name
+
+== Drift, seen from the side that can actually see it ==
+   ok   her record holds what it did, not only what it asked
+   ok   every call is filed under the tier it was made against
+   ok   and the widening is visible as more than one tier
+   one agent, 4 calls across 2 of her tiers
+   ok   she can write a rule about the trajectory itself
+   ok   and it cannot be turned into a reason to grant
+
+== Which of her terms are refused, and which are only promised ==
+   ok   her trade tier marks the prohibitions it actually refuses
+   ok   and names the mechanism that refuses each
+   ok   her holdings tier claims none, because none of them cross her door
+   ok   the enforced ones are a subset of what she actually prohibits
+   two of her trade prohibitions are refused; the rest are undertakings
+
+== One terms document, three representations, one receipt ==
+   ok   the terms document is served as JSON, as HTML and as JSON-LD at one URI
+   ok   the grant returns a receipt countersigned by her authority
+   ok   and the receipt embeds the agreement the agent signed
+
+== And policy can read it, naming no agent ==
+   ok   a tier reading the reason and the record saves
+   ok   a rule relaxing on her own refusals does not
+   ok   all four are offered to her policy editor
+   queue left empty (0 of this check's requests dismissed)
+
+42 passed, 0 failed
+
+PASS: her terms could not be signed weaker than she wrote them, the
+      ones her enforcement point actually refuses are marked as such,
+      what the agent said it wanted was recorded and never judged,
+      and drift was read from her own record rather than reported by
+      the side being watched — tightening only, and naming no agent.

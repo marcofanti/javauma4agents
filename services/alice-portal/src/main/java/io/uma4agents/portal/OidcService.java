@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Hand-rolled OIDC authorization-code flow with PKCE (S256) for the public
- * client {@code alice-portal}, plus the server-side token store — a direct port
+ * client {@code meridian-portal}, plus the server-side token store — a direct port
  * of the authlib wiring in the Python portal. Alice's Keycloak tokens live only
  * here; the session cookie carries an opaque {@code sid}.
  */
@@ -95,18 +95,26 @@ public class OidcService {
         if (token == null || !(token.get("access_token") instanceof String access)) {
             return null;
         }
+        Map<String, Object> claims = idTokenClaims((String) token.get("id_token"));
+        // Whoever can sign in to her identity provider is not therefore her. A session for
+        // anyone else would read and trade her vault, which these routes do not re-check.
+        if (!config.orgConsole && !config.owner.equals(claims.get("preferred_username"))) {
+            return Map.of(ANOTHER_ACCOUNT, "true");
+        }
         String sid = randomToken(16);
         Tokens t = new Tokens();
         t.accessToken = access;
         t.refreshToken = (String) token.get("refresh_token");
         t.expiresAt = Instant.now().getEpochSecond() + expiresIn(token);
         tokens.put(sid, t);
-
-        Map<String, Object> claims = idTokenClaims((String) token.get("id_token"));
         String name = firstNonBlank(
-                (String) claims.get("name"), (String) claims.get("preferred_username"), "Alice");
+                (String) claims.get("name"), (String) claims.get("preferred_username"),
+                config.owner);
         return Map.of("sid", sid, "user", name);
     }
+
+    /** The callback's answer when someone other than the owner signed in. */
+    public static final String ANOTHER_ACCOUNT = "another_account";
 
     /** Alice's current access token, refreshed against Keycloak when stale. */
     public String ownerToken(String sid) {
@@ -117,14 +125,14 @@ public class OidcService {
         if (t.expiresAt > Instant.now().getEpochSecond() + 15) {
             return t.accessToken;
         }
-        if (t.refreshToken == null) {
-            return null;
-        }
-        Map<String, Object> fresh = postToken(Map.of(
+        Map<String, Object> fresh = t.refreshToken == null ? null : postToken(Map.of(
                 "grant_type", "refresh_token",
                 "refresh_token", t.refreshToken,
                 "client_id", config.oidcClientId));
         if (fresh == null || !(fresh.get("access_token") instanceof String access)) {
+            // The provider ended her session (or it can no longer be renewed): so does
+            // the portal, rather than keep a login that reaches nothing.
+            tokens.remove(sid);
             return null;
         }
         t.accessToken = access;

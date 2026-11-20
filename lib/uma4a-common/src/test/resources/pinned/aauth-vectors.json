@@ -1,0 +1,898 @@
+{
+  "now": 1800000000,
+  "issuer": "https://ap.example",
+  "cases": [
+    {
+      "name": "current shape",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.lze682g4aOZchjj4EZeRea_qZVgVV-o-wldCq1mrCgjJH3goIJLHLEcnP8YDuPLXcECDXhCACpHzyglVRm84Cg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:planner@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "alg": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "current without jti",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwiaWF0IjoxODAwMDAwMDAwLCJleHAiOjE4MDAwMDM2MDAsImNuZiI6eyJqd2siOnsieCI6IjVfRmlvUXZzVlpyLW9aWGszT2hMYVZhTlhTeXdsajYwUnNCb1hpc1g4dkEiLCJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwiYWxnIjoiRWQyNTUxOSJ9fX0.AdLHBSmXDd7nfaczSKYNIfLykDcPMRKTq58DFHLOe6jLf1FU9x-iMFqhcGhYXphp-waQ--Fs4gQ3jdEHBAliCA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "an Ed25519 agent token must carry jti"
+    },
+    {
+      "name": "current without dwk and iat",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJzdWIiOiJhYXV0aDpwbGFubmVyQGFwLmV4YW1wbGUiLCJqdGkiOiJhdC0xIiwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.R_C3_LLQShb0Tcltf8OoBD5UnJoEyfB96t2BAwrjSyAcrL2OFMecpQMAiEXFTHVEkAzCC0iUsYyKJ1y9O-FACA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "an Ed25519 agent token must carry dwk, iat"
+    },
+    {
+      "name": "current, cnf.jwk names nothing",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.XhLy5baKuZXOgec5hpvPXTVTyaLZBBmHZWPhXimu_WBFIkyXRDI0KMch7c2o-tdDMZGwKlvdyaOUYoioWytsDQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "cnf.jwk must name 'Ed25519' in an Ed25519 agent token"
+    },
+    {
+      "name": "current under a bare key",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.lze682g4aOZchjj4EZeRea_qZVgVV-o-wldCq1mrCgjJH3goIJLHLEcnP8YDuPLXcECDXhCACpHzyglVRm84Cg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "https://ap.example's key 'ap-1' must name 'Ed25519'"
+    },
+    {
+      "name": "current under an EdDSA key",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.lze682g4aOZchjj4EZeRea_qZVgVV-o-wldCq1mrCgjJH3goIJLHLEcnP8YDuPLXcECDXhCACpHzyglVRm84Cg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "https://ap.example's key 'ap-1': it names 'EdDSA' and the token 'Ed25519'"
+    },
+    {
+      "name": "earlier shape",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.gRMuOS58BbFew7myPb7EDAn2OoCTn2JVeaO3CWr0zXuI-Vodv2Ds89hlQKFmott5RCJlfBBrMzqJkFRbmr_wBw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:planner@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "earlier under a bare key",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.gRMuOS58BbFew7myPb7EDAn2OoCTn2JVeaO3CWr0zXuI-Vodv2Ds89hlQKFmott5RCJlfBBrMzqJkFRbmr_wBw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:planner@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "earlier without dwk, jti, iat",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJzdWIiOiJhYXV0aDpwbGFubmVyQGFwLmV4YW1wbGUiLCJleHAiOjE4MDAwMDM2MDAsImNuZiI6eyJqd2siOnsieCI6IjVfRmlvUXZzVlpyLW9aWGszT2hMYVZhTlhTeXdsajYwUnNCb1hpc1g4dkEiLCJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5In19fQ.SzuoS7MJZktDF9-8Y6rcIzYVuSaElEzJXSuLwemL2unkK7XZyQS5u8E3eQmdKMc2Tgc9DAD1f_WIKjFbbWPjDA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "sub": "aauth:planner@ap.example",
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "earlier under an Ed25519 key",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.gRMuOS58BbFew7myPb7EDAn2OoCTn2JVeaO3CWr0zXuI-Vodv2Ds89hlQKFmott5RCJlfBBrMzqJkFRbmr_wBw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "https://ap.example's key 'ap-1': it names 'Ed25519' and the token 'EdDSA'"
+    },
+    {
+      "name": "another typ",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWF1dGgrand0In0.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.WfOykrARiWu1LCWKR53zEjPbKFH_d8DU3OnMcsZ7YeN2TbcDYuvFPgkg6dftU4Pnf2A0YdQq2sKde64XGwFRAw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "typ must be 'aa-agent+jwt', not 'aa-auth+jwt'"
+    },
+    {
+      "name": "an http issuer",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwOi8vYXAuZXhhbXBsZSIsImR3ayI6ImFhdXRoLWFnZW50Lmpzb24iLCJzdWIiOiJhYXV0aDpwbGFubmVyQGFwLmV4YW1wbGUiLCJqdGkiOiJhdC0xIiwiaWF0IjoxODAwMDAwMDAwLCJleHAiOjE4MDAwMDM2MDAsImNuZiI6eyJqd2siOnsieCI6IjVfRmlvUXZzVlpyLW9aWGszT2hMYVZhTlhTeXdsajYwUnNCb1hpc1g4dkEiLCJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwiYWxnIjoiRWQyNTUxOSJ9fX0.IYKqqVMqKLtAu8fQFFra72BnPu7eNTyinByX1kJfYPX-Hk_PCXSp42v061TS1OahHM0WuKZ0LLDE8JF8DapQAQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "'http://ap.example' is not an https issuer"
+    },
+    {
+      "name": "another dwk",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1wZXJzb24uanNvbiIsInN1YiI6ImFhdXRoOnBsYW5uZXJAYXAuZXhhbXBsZSIsImp0aSI6ImF0LTEiLCJpYXQiOjE4MDAwMDAwMDAsImV4cCI6MTgwMDAwMzYwMCwiY25mIjp7Imp3ayI6eyJ4IjoiNV9GaW9RdnNWWnItb1pYazNPaExhVmFOWFN5d2xqNjBSc0JvWGlzWDh2QSIsImt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJhbGciOiJFZDI1NTE5In19fQ.mY66Te26IAcQqBFbfnczckL_hoJCR_YGeq7ck8eBCWOkelwf8KDfAqID7eWQ4vPEvdy29OvofucatbLJV76aBg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "dwk must be 'aauth-agent.json', not 'aauth-person.json'"
+    },
+    {
+      "name": "metadata naming another issuer",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.lze682g4aOZchjj4EZeRea_qZVgVV-o-wldCq1mrCgjJH3goIJLHLEcnP8YDuPLXcECDXhCACpHzyglVRm84Cg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://elsewhere.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "the issuer's aauth-agent.json names 'https://elsewhere.example', not 'https://ap.example'"
+    },
+    {
+      "name": "metadata naming no issuer",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.gRMuOS58BbFew7myPb7EDAn2OoCTn2JVeaO3CWr0zXuI-Vodv2Ds89hlQKFmott5RCJlfBBrMzqJkFRbmr_wBw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:planner@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown kid",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMiIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.tRHLZlGMhwBkM-Iv9NUd7xfl-DPbBiSZj-IrQ66UsR1pLQCXdvnjlUKy6sAqTYCKEp3ATTDxWoBmoKilDcedCQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "https://ap.example publishes no key 'ap-2'"
+    },
+    {
+      "name": "no kid, one key",
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.u4y5SFMpinuMmSk_YINXUgn0J5PuA67l0DYnPlhzs5zYU6IzEsokyVQfzJcXu7SW7cePxThUFKTbSUPclsJqBQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:planner@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "no kid, two keys",
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.u4y5SFMpinuMmSk_YINXUgn0J5PuA67l0DYnPlhzs5zYU6IzEsokyVQfzJcXu7SW7cePxThUFKTbSUPclsJqBQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA"
+            },
+            {
+              "x": "rcFAEfgtHFbZVqpPnXPYhYNhpgYEhSXg0Ixjjcdd2Mc",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA"
+            }
+          ]
+        }
+      },
+      "refused": "the token names no kid and https://ap.example publishes 2 keys"
+    },
+    {
+      "name": "an Ed448 key",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSJ9fX0.gRMuOS58BbFew7myPb7EDAn2OoCTn2JVeaO3CWr0zXuI-Vodv2Ds89hlQKFmott5RCJlfBBrMzqJkFRbmr_wBw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed448",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "https://ap.example's key 'ap-1': the key is not an Ed25519 key"
+    },
+    {
+      "name": "signed by another key",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.v_OUwp3HjxuWLWYNBSIwGW0-ooehq88O5e1dNhayZQQsiIbMl88vfdJ5_eX5SFNiI5XtpHfLtXbHKI7YS87TCg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "did not verify against https://ap.example's key 'ap-1': Signature verification failed"
+    },
+    {
+      "name": "no sub",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.3b6x2W8zNWaAwEk1DfulXL9RJd8vMGAz1KdH90KFRZ12m58SsexBRwrvtbcuhtfX0HMXJIojoL8iEmRLyvtXCg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "did not verify against https://ap.example's key 'ap-1': Token is missing the \"sub\" claim"
+    },
+    {
+      "name": "expired",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxNzk5OTk5OTk5LCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.kCSkpO7InXE0-KmB8za-xRFG9T2IT0pXQW_Sglb8y3PsZ5AVp9mrlUBhLadoAi93Wu21pL7EfIX5_Mvs7cWjBw",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "did not verify against https://ap.example's key 'ap-1': Signature has expired"
+    },
+    {
+      "name": "expires now",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAwMDAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.Q2hVlcbYxcyeD6B1hXawnTxwreXz5pyb2sxEFh-W4kQ-l2xc8B3x4wh_2GbPYZuEO2hJUoQMoRpNHHyOVwZCDg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "did not verify against https://ap.example's key 'ap-1': Signature has expired"
+    },
+    {
+      "name": "not yet valid",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX0sIm5iZiI6MTgwMDAwMDAxMH0.XYWjFBG08MvMCsi6Hr5VwmI7FF8oosNYm48wVFC6cHr8SEpcfYf3uLsfwARO58xPh4D-MLSaU62Bq0-6xwsDCA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "did not verify against https://ap.example's key 'ap-1': The token is not yet valid (nbf)"
+    },
+    {
+      "name": "subject under another domain",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBvdGhlci5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.f7Jn-g4gN68_OhdQ5YsxEiwyJSI3vE-rFrzUSweqUFBxy3paHrggF4GT9DLp3o7vspgG1t_etMt7wqTlGuPDCg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "'aauth:planner@other.example' is not an agent of ap.example"
+    },
+    {
+      "name": "malformed aauth subject",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lciIsImp0aSI6ImF0LTEiLCJpYXQiOjE4MDAwMDAwMDAsImV4cCI6MTgwMDAwMzYwMCwiY25mIjp7Imp3ayI6eyJ4IjoiNV9GaW9RdnNWWnItb1pYazNPaExhVmFOWFN5d2xqNjBSc0JvWGlzWDh2QSIsImt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJhbGciOiJFZDI1NTE5In19fQ.AHZBaNXx1cerupb073eWQeNOfAPNOe5qZ56aYmQ6fc1Ltg6DKHNyjxrlAT3eVYR6w_pxk57xoiYAGaL73xvMCA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "'aauth:planner' is not an AAuth agent identifier"
+    },
+    {
+      "name": "case kept",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6UGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX19.Pj5CLnTpHeeeaDoKNbonnA_H3Sd7QeDsVPkLA7mPd0iXX8Rk6gO5ypC3Nl9Ck5o_0VYqjKBWD1-nuh4ub6tRCQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:Planner@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "alg": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "another subject form",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiZGVsZWdhdGUtNyIsImp0aSI6ImF0LTEiLCJpYXQiOjE4MDAwMDAwMDAsImV4cCI6MTgwMDAwMzYwMCwiY25mIjp7Imp3ayI6eyJ4IjoiNV9GaW9RdnNWWnItb1pYazNPaExhVmFOWFN5d2xqNjBSc0JvWGlzWDh2QSIsImt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkifX19.IoBBDOUe2qgn18eEFoA26CupM4M5Rnp5jN7uT4Pm4JIGcCUs8dwqkH7aVMh0hnge-MMgmw4E_tCbcndvfogCDA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "delegate-7",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519"
+          }
+        }
+      }
+    },
+    {
+      "name": "no cnf",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwfQ.LRDJZtmlLMAPUqRcNdbrUt6Cs_ILF1DYd64TLeDBM3DQf6-_9lVVxT8VsX6wkBDXV5_4_Zi2XshmjU0vKYwlAQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "no cnf.jwk binds the token to a key"
+    },
+    {
+      "name": "cnf.jwk Ed448",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQ0NDgifX19.nWvx-pkQIpJd7P-gG4rAMsMlfykpPDK2wfuZYgEl86BZoaRyg8RJrB-OLnazRtcj4yDoOghbZr96EKVVLJ4gCA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "EdDSA",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "cnf.jwk: the key is not an Ed25519 key"
+    },
+    {
+      "name": "sub-agent",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lcitzZWFyY2gxQGFwLmV4YW1wbGUiLCJqdGkiOiJhdC0xIiwiaWF0IjoxODAwMDAwMDAwLCJleHAiOjE4MDAwMDM2MDAsImNuZiI6eyJqd2siOnsieCI6IjVfRmlvUXZzVlpyLW9aWGszT2hMYVZhTlhTeXdsajYwUnNCb1hpc1g4dkEiLCJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwiYWxnIjoiRWQyNTUxOSJ9fSwicGFyZW50X2FnZW50IjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIn0.Dhc602mCLltiZbzhCqeHJRzqbDYydFd79gnyIjaxPCzubxgij-veRXfTRivHfVffGCsqeQH91Wjma6EUjzd0AA",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "dwk": "aauth-agent.json",
+        "sub": "aauth:planner+search1@ap.example",
+        "jti": "at-1",
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "cnf": {
+          "jwk": {
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "alg": "Ed25519"
+          }
+        },
+        "parent_agent": "aauth:planner@ap.example"
+      }
+    },
+    {
+      "name": "parent under another domain",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX0sInBhcmVudF9hZ2VudCI6ImFhdXRoOnBsYW5uZXJAb3RoZXIuZXhhbXBsZSJ9.z7UKRQcCienEgLvxBiY6J8newl5nDzi7UFj6SxJ97I7nYPooPDaynsIZbMKKiGutxuzhGYmPR0uhB5yPiB3MAg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "'aauth:planner@other.example' is not an agent of ap.example"
+    },
+    {
+      "name": "its own parent",
+      "token": "eyJhbGciOiJFZDI1NTE5Iiwia2lkIjoiYXAtMSIsInR5cCI6ImFhLWFnZW50K2p3dCJ9.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJkd2siOiJhYXV0aC1hZ2VudC5qc29uIiwic3ViIjoiYWF1dGg6cGxhbm5lckBhcC5leGFtcGxlIiwianRpIjoiYXQtMSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwLCJjbmYiOnsiandrIjp7IngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIiwia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsImFsZyI6IkVkMjU1MTkifX0sInBhcmVudF9hZ2VudCI6ImFhdXRoOnBsYW5uZXJAYXAuZXhhbXBsZSJ9.NbA2_qBaFl2uOvzzu62Ot4l7d73hPHKqlHPP8UM0kNWvp9nf1shDr16JsN8up9S_XynqXBqgVxez_S8oRPBEAg",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "alg": "Ed25519",
+              "kid": "ap-1"
+            }
+          ]
+        }
+      },
+      "refused": "an agent cannot be its own parent"
+    },
+    {
+      "name": "minted by aauth 0.3.2",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImFwLTEiLCJ0eXAiOiJhYS1hZ2VudCtqd3QifQ.eyJpc3MiOiJodHRwczovL2FwLmV4YW1wbGUiLCJzdWIiOiJhYXV0aDozZjFjMmU3YUBhcC5leGFtcGxlIiwiZHdrIjoiYWF1dGgtYWdlbnQuanNvbiIsImp0aSI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwNyIsImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiI1X0Zpb1F2c1Zaci1vWlhrM09oTGFWYU5YU3l3bGo2MFJzQm9YaXNYOHZBIn19LCJpYXQiOjE4MDAwMDAwMDAsImV4cCI6MTgwMDAwMzYwMCwicHMiOiJodHRwczovL3BzLmV4YW1wbGUifQ.OIK7JpkoE3Klh9gTlQGM5lJXqxZpr6j6hgJ6VuHqI2Yp0BlCjiwEhXa6cnYN7FKU1kikJ4sa5TYS0JBb7MOhBQ",
+      "docs": {
+        "https://ap.example/.well-known/aauth-agent.json": {
+          "jwks_uri": "https://ap.example/jwks.json",
+          "issuer": "https://ap.example"
+        },
+        "https://ap.example/jwks.json": {
+          "keys": [
+            {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "ebVWLo_mVPlAeLES6KmLp5AfhTrmlb7X4OORC60ElmQ",
+              "kid": "ap-1",
+              "alg": "EdDSA",
+              "use": "sig"
+            }
+          ]
+        }
+      },
+      "claims": {
+        "iss": "https://ap.example",
+        "sub": "aauth:3f1c2e7a@ap.example",
+        "dwk": "aauth-agent.json",
+        "jti": "00000000-0000-0000-0000-000000000007",
+        "cnf": {
+          "jwk": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA"
+          }
+        },
+        "iat": 1800000000,
+        "exp": 1800003600,
+        "ps": "https://ps.example"
+      }
+    }
+  ]
+}

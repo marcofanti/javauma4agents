@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Alice's bearer token server-side — the browser never sees the owner token.
  */
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "uma.portal.mode", havingValue = "owner", matchIfMissing = true)
 public class AgentProxyController {
 
     private final PortalConfig config;
@@ -56,6 +59,56 @@ public class AgentProxyController {
         return proxy(request, "GET", "/owner/resources", null, "[]");
     }
 
+    @GetMapping("/api/agent/organization")
+    public ResponseEntity<String> organization(HttpServletRequest request) {
+        return proxy(request, "GET", "/owner/organization", null, "{}");
+    }
+
+    @PostMapping("/api/agent/organization")
+    public ResponseEntity<String> joinOrganization(@RequestBody String body,
+                                                    HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/organization", body, "{\"error\": \"auth\"}");
+    }
+
+    @PostMapping("/api/agent/organization/preview")
+    public ResponseEntity<String> previewOrganization(@RequestBody String body,
+                                                       HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/organization/preview", body,
+                "{\"error\": \"auth\"}");
+    }
+
+    @PostMapping("/api/agent/organization/decline")
+    public ResponseEntity<String> declineOrganization(@RequestBody String body,
+                                                       HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/organization/decline", body,
+                "{\"error\": \"auth\"}");
+    }
+
+    @DeleteMapping("/api/agent/organization")
+    public ResponseEntity<String> leaveOrganization(HttpServletRequest request) {
+        return proxy(request, "DELETE", "/owner/organization", null, "{\"error\": \"auth\"}");
+    }
+
+    @GetMapping("/api/agent/joint")
+    public ResponseEntity<String> joint(HttpServletRequest request) {
+        return proxy(request, "GET", "/owner/joint", null, "[]");
+    }
+
+    @PostMapping("/api/agent/joint")
+    public ResponseEntity<String> joinJoint(@RequestBody String body, HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/joint", body, "{\"error\": \"auth\"}");
+    }
+
+    @PostMapping("/api/agent/joint/preview")
+    public ResponseEntity<String> previewJoint(@RequestBody String body, HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/joint/preview", body, "{\"error\": \"auth\"}");
+    }
+
+    @DeleteMapping("/api/agent/joint/{account:[a-zA-Z0-9._-]+}")
+    public ResponseEntity<String> leaveJoint(@PathVariable String account, HttpServletRequest request) {
+        return proxy(request, "DELETE", "/owner/joint/" + account, null, "{\"error\": \"auth\"}");
+    }
+
     @GetMapping("/api/agent/resource-servers")
     public ResponseEntity<String> resourceServers(HttpServletRequest request) {
         return proxy(request, "GET", "/owner/resource-servers", null, "[]");
@@ -65,6 +118,13 @@ public class AgentProxyController {
     public ResponseEntity<String> revokeResourceServer(@PathVariable String clientId,
                                                        HttpServletRequest request) {
         return proxy(request, "POST", "/owner/resource-servers/" + clientId + "/revoke", null,
+                "{\"error\": \"auth\"}");
+    }
+
+    @PostMapping("/api/agent/resource-servers/decision")
+    public ResponseEntity<String> decideResourceServer(@RequestBody String body,
+                                                        HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/resource-servers/decision", body,
                 "{\"error\": \"auth\"}");
     }
 
@@ -81,21 +141,71 @@ public class AgentProxyController {
                 "{\"error\": \"auth\"}");
     }
 
+    @PostMapping("/api/agent/policies")
+    public ResponseEntity<String> createPolicy(@RequestBody String body,
+                                               HttpServletRequest request) {
+        return proxy(request, "POST", "/owner/policies", body, "{\"error\": \"auth\"}");
+    }
+
+    @DeleteMapping("/api/agent/policies/{tierId}")
+    public ResponseEntity<String> deletePolicy(@PathVariable String tierId,
+                                               HttpServletRequest request) {
+        return proxy(request, "DELETE", "/owner/policies/" + tierId, null,
+                "{\"error\": \"auth\"}");
+    }
+
+    @GetMapping("/api/agent/policy-vocabulary")
+    public ResponseEntity<String> policyVocabulary(HttpServletRequest request) {
+        return proxy(request, "GET", "/owner/policy-vocabulary", null, "[]");
+    }
+
+    @GetMapping("/api/agent/operators")
+    public ResponseEntity<String> operators(HttpServletRequest request) {
+        return proxy(request, "GET", "/owner/operators", null, "[]");
+    }
+
+    /**
+     * Blocking and unblocking an operator. Claiming one as hers is not offered here, as at
+     * the pin: it stays an owner-API action.
+     */
+    @PostMapping("/api/agent/operators/{action}")
+    public ResponseEntity<String> operatorAction(@PathVariable String action,
+                                                 @RequestBody String body,
+                                                 HttpServletRequest request) {
+        if (!"block".equals(action) && !"unblock".equals(action)) {
+            if (sessions.currentUser(request) == null) {
+                return ResponseEntity.status(401).contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\": \"auth\"}");
+            }
+            return ResponseEntity.status(404).contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\": \"unknown action\"}");
+        }
+        return proxy(request, "POST", "/owner/operators/" + action, body,
+                "{\"error\": \"auth\"}");
+    }
+
     @GetMapping("/api/agent/connections")
     public ResponseEntity<String> connections(HttpServletRequest request) {
         return proxy(request, "GET", "/owner/connections", null, "[]");
     }
 
-    @PostMapping("/api/agent/connections/{jkt}/revoke")
-    public ResponseEntity<String> revokeConnection(@PathVariable String jkt,
+    /** Revokes a connection; the body names it as {"handle": …}, as the pinned portal does. */
+    @PostMapping("/api/agent/connections/revoke")
+    public ResponseEntity<String> revokeConnection(@RequestBody String body,
                                                    HttpServletRequest request) {
-        return proxy(request, "POST", "/owner/connections/" + jkt + "/revoke", null,
+        return proxy(request, "POST", "/owner/connections/revoke", body,
                 "{\"error\": \"auth\"}");
     }
 
     @GetMapping("/api/agent/ledger")
     public ResponseEntity<String> ledger(HttpServletRequest request) {
-        return proxy(request, "GET", "/owner/ledger", null, "[]");
+        // `?handle=` narrows the record to one agent's trajectory, forwarded rather than
+        // filtered here: the portal holds no authority and no state.
+        String handle = request.getParameter("handle");
+        String path = handle == null || handle.isEmpty() ? "/owner/ledger"
+                : "/owner/ledger?handle=" + java.net.URLEncoder.encode(handle,
+                        java.nio.charset.StandardCharsets.UTF_8);
+        return proxy(request, "GET", path, null, "[]");
     }
 
     /** Raw byte-level SSE pass-through of uma-as's owner event stream. */

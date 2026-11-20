@@ -2,8 +2,7 @@ package io.uma4agents.authserver;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-import io.uma4agents.common.CompactJws;
-import io.uma4agents.common.Jwks;
+import io.uma4agents.common.AgentTokens;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -20,14 +19,15 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Inbound token verification: Alice's Keycloak OIDC token (owner API, RS256
- * against the realm's published keys) and agents' {@code aa-agent+jwt} (EdDSA
- * against the AAuth issuer's discovered keys, https origins only).
+ * Inbound token verification: Alice's Keycloak OIDC token (one owner credential, RS256
+ * against the realm's published keys) and agents' {@code aa-agent+jwt} (Ed25519 or
+ * EdDSA, against the keys of an issuer the deployment names).
  */
 @Component
 public class TokenVerifiers {
@@ -37,12 +37,14 @@ public class TokenVerifiers {
     private final AsConfig config;
     private final HttpClient http;
     private final Map<String, CachedKeys> jwksCache = new ConcurrentHashMap<>();
+    private final AgentTokens agentTokens;
 
     private record CachedKeys(long expires, List<Map<String, Object>> keys) {}
 
-    public TokenVerifiers(AsConfig config, HttpClient http) {
+    public TokenVerifiers(AsConfig config, HttpClient http, PeerFetch peerFetch) {
         this.config = config;
         this.http = http;
+        this.agentTokens = new AgentTokens(peerFetch::getJson, config.agentIssuers);
     }
 
     /** Extracts the bearer token or raises 401 — the Python _bearer(). */
@@ -54,14 +56,26 @@ public class TokenVerifiers {
     }
 
     /**
-     * The owner API takes Alice's own OIDC access token, validated against her
-     * realm's published keys. Raises 401/403 with FastAPI-shaped details.
+     * One owner credential: Alice's own OIDC access token, validated against her realm's
+     * published keys. Returns the owner it proves; whether this server serves that owner
+     * is decided by {@link OwnerAuth}.
+     *
+     * @param authorization the Authorization header, or null
+     * @return the token's {@code preferred_username}
+     * @throws ResponseStatusException 401 or 403 with the pinned details
      */
-    public void requireOwner(String authorization) {
+    public String oidcOwner(String authorization) {
         String token = bearer(authorization);
         Map<String, Object> claims;
         try {
-            claims = verifyRs256(token, ownerIssuerKeys());
+            List<Map<String, Object>> keys = ownerIssuerKeys(false);
+            Object kid = headerKid(token);
+            // Her identity provider rotates keys: a token naming one not cached earns one
+            // fresh read, at most once a minute.
+            if (kid != null && keys.stream().noneMatch(k -> kid.equals(k.get("kid")))) {
+                keys = ownerIssuerKeys(true);
+            }
+            claims = verifyRs256(token, keys);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "owner API requires the owner's OIDC token: " + e.getMessage());
@@ -70,53 +84,23 @@ public class TokenVerifiers {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "token was not issued to an owner-surface client");
         }
-        if (!config.ownerUsername.equals(claims.get("preferred_username"))) {
+        if (!(claims.get("preferred_username") instanceof String owner) || owner.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "this authorization server serves a different owner");
+                    "owner token carries no preferred_username");
         }
+        return owner;
     }
 
-    /** Validates an aa-agent+jwt against its issuer's published keys. */
+    /**
+     * An AAuth agent token, verified against the keys its issuer publishes, if the
+     * deployment named that issuer.
+     *
+     * @param agentToken the compact {@code aa-agent+jwt}
+     * @return its claims
+     * @throws AgentTokens.Refused naming the check that failed
+     */
     public Map<String, Object> verifyAgentToken(String agentToken) {
-        CompactJws.Parsed parsed = CompactJws.parse(agentToken);
-        Object typ = parsed.header().get("typ");
-        if (!"aa-agent+jwt".equals(typ)) {
-            throw new IllegalArgumentException(
-                    "agent token typ must be aa-agent+jwt, got '" + typ + "'");
-        }
-        Object iss = parsed.claims().get("iss");
-        if (!(iss instanceof String issuer) || issuer.isBlank()) {
-            throw new IllegalArgumentException("agent token has no issuer");
-        }
-        List<Map<String, Object>> candidates;
-        try {
-            candidates = agentIssuerKeys(issuer);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    "agent token issuer discovery failed for " + issuer + ": " + e.getMessage());
-        }
-        Object kid = parsed.header().get("kid");
-        Exception lastError = null;
-        for (Map<String, Object> jwk : candidates) {
-            if (kid != null && jwk.get("kid") != null && !kid.equals(jwk.get("kid"))) {
-                continue;
-            }
-            try {
-                CompactJws.verify(agentToken, Jwks.toPublicKey(jwk));
-                checkExpiry(parsed.claims());
-                Object cnf = parsed.claims().get("cnf");
-                if (!(cnf instanceof Map<?, ?> cnfMap) || !(cnfMap.get("jwk") instanceof Map)) {
-                    throw new IllegalArgumentException(
-                            "agent token carries no cnf.jwk key binding");
-                }
-                return parsed.claims();
-            } catch (SecurityException | IllegalArgumentException e) {
-                lastError = e;
-            }
-        }
-        throw new IllegalArgumentException("agent token signature did not verify against "
-                + issuer + "'s published keys: "
-                + (lastError == null ? "no candidate keys" : lastError.getMessage()));
+        return agentTokens.verify(agentToken);
     }
 
     static void checkExpiry(Map<String, Object> claims) {
@@ -126,26 +110,37 @@ public class TokenVerifiers {
         }
     }
 
-    /**
-     * Resolve an agent-token issuer's signing keys via AAuth discovery.
-     * TLS on the issuer origin is the trust root, so non-https issuers are
-     * rejected outright.
-     */
-    public List<Map<String, Object>> agentIssuerKeys(String issuer) {
-        if (!issuer.startsWith("https://")) {
-            throw new IllegalArgumentException("agent token issuer must be an https origin");
-        }
-        return cachedJwks(issuer, issuer + "/.well-known/aauth-agent.json");
-    }
+    /** Seconds between forced reads of her realm's keys. */
+    static final long KEY_REFETCH_FLOOR_S = 60;
 
-    private List<Map<String, Object>> ownerIssuerKeys() {
+    /** Epoch seconds; replaceable so the refetch floor can be tested without waiting. */
+    LongSupplier clock = AsState::now;
+
+    private List<Map<String, Object>> ownerIssuerKeys(boolean fresh) {
         return cachedJwks(config.ownerIssuer,
-                config.ownerIssuer + "/.well-known/openid-configuration");
+                config.ownerIssuer + "/.well-known/openid-configuration", fresh);
     }
 
-    private List<Map<String, Object>> cachedJwks(String cacheKey, String discoveryUrl) {
+    private static Object headerKid(String token) {
+        try {
+            String head = token.substring(0, token.indexOf('.'));
+            Map<String, Object> header = MAPPER.readValue(Base64.getUrlDecoder().decode(head),
+                    new TypeReference<>() {});
+            return header.get("kid");
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private List<Map<String, Object>> cachedJwks(String cacheKey, String discoveryUrl,
+                                                 boolean fresh) {
         CachedKeys cached = jwksCache.get(cacheKey);
-        if (cached != null && cached.expires() > AsState.now()) {
+        long now = clock.getAsLong();
+        if (cached != null && cached.expires() > now && !fresh) {
+            return cached.keys();
+        }
+        if (fresh && cached != null
+                && now - (cached.expires() - AsConfig.JWKS_CACHE_TTL) < KEY_REFETCH_FLOOR_S) {
             return cached.keys();
         }
         Map<String, Object> meta = getJson(discoveryUrl);
@@ -155,7 +150,7 @@ public class TokenVerifiers {
         if (keys == null) {
             throw new IllegalStateException("no keys at " + meta.get("jwks_uri"));
         }
-        jwksCache.put(cacheKey, new CachedKeys(AsState.now() + AsConfig.JWKS_CACHE_TTL, keys));
+        jwksCache.put(cacheKey, new CachedKeys(now + AsConfig.JWKS_CACHE_TTL, keys));
         return keys;
     }
 

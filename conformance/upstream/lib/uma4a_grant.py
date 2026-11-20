@@ -1,0 +1,909 @@
+"""uma4a_grant — the requesting-agent side of the four-beat grant loop.
+
+Shared by the agent-shim (live Claude sessions) and the demo-driver
+(headless acts). Handles: parsing the UMA challenge, presenting tickets,
+receiving Alice's dictated terms, signing the intent contract with the
+agent's Ed25519 key, waiting out request_submitted holds, and signing
+resource requests for proof-of-possession.
+
+Terms approval is a callback so the shim can elicit Bob inside his agent
+while the driver applies his standing config.
+"""
+
+import base64
+import hashlib
+import json
+import re
+import time
+from urllib.parse import urlparse
+from dataclasses import dataclass, field
+from typing import Callable
+
+import httpx
+import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from jwt.algorithms import OKPAlgorithm
+
+import uma4a_jose
+from uma4a_http_sig import jwk_thumbprint, sign
+
+# MyTerms-shaped agreement: the owner proffers the terms; this side signs them.
+AGREEMENT_FORMAT = "https://u4a.ai/spec/terms/1.0#myterms-agreement-v1+jws"
+GRANT_TYPE = "urn:ietf:params:oauth:grant-type:uma-ticket"
+# The enterprise half, asked for by an authorization server whose owner is a
+# member of an organization that federates identity. See `Enterprise`.
+ID_JAG_FORMAT = "urn:ietf:params:oauth:token-type:id-jag"
+ID_JAG_CLAIM = "urn:ietf:params:oauth:token-type:id-jag"
+TOKEN_EXCHANGE = "urn:ietf:params:oauth:grant-type:token-exchange"
+ID_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token"
+
+
+@dataclass
+class Enterprise:
+    """What an agent running inside an enterprise application already holds.
+
+    Nothing here is arranged with any particular authorization server, and
+    that is the point: these are the credentials the application has because
+    an employee signed into it and because an administrator registered it.
+    An agent carrying them can satisfy an identity challenge from a server it
+    has never heard of, which is what makes the exchange resource-initiated.
+
+    `subject_token` is the employee's OpenID Connect ID token. The client
+    credentials are the application's own, at the identity provider — not at
+    the authorization server, which never sees them.
+    """
+    subject_token: str
+    client_id: str
+    client_secret: str = ""
+    # The identity provider these credentials belong to, and the only place
+    # they are ever sent. The challenge names which provider the resource
+    # side will believe; it does not get to name where an employee's token
+    # and the application's secret go, because a resource this agent has
+    # never heard of is exactly the party that should not be able to.
+    issuer: str = ""
+    # Where that provider exchanges tokens, when it is not at the provider's
+    # own origin or should not be taken from the challenge at all.
+    token_endpoint: str = ""
+    # What the subject token *is*. A real tenant exchanges the refresh token
+    # from the employee's sign-in; the provider shipped beside this lab
+    # exchanges an ID token. Left unset, the challenge decides — the provider
+    # advertises what it will take, and an agent should not have to be
+    # configured with a fact its identity provider publishes.
+    subject_token_type: str = ""
+    # The deployment's own CA, where an agent knows it and would rather not
+    # have it discovered. Public roots are added to it either way.
+    ca_bundle: str = ""
+
+
+class GrantDenied(Exception):
+    pass
+
+
+class TermsRejected(Exception):
+    pass
+
+
+@dataclass
+class AgentKeys:
+    """The requesting agent's signing identity.
+
+    Pseudonymous (AAuth level 0): `key` is the persisted long-term key and
+    its bare public JWK rides the contract's JWS header — the key *is* the
+    identity, so it must be stable across runs for the owner's standing
+    connection to recognize the agent.
+
+    Identified: `stable` is the persisted long-term key enrolled at the
+    agent server; `key` is a fresh per-session ephemeral key that the issued
+    aa-agent+jwt (`agent_token`) binds via cnf.jwk. Contracts and PoP
+    requests are signed with the ephemeral key; identity continuity lives in
+    the token's issuer+subject, not the key.
+    """
+
+    key: Ed25519PrivateKey = field(default_factory=Ed25519PrivateKey.generate)
+    # Defaults to one derived from the key, so two agents publishing to the
+    # same operator directory never overwrite each other's entry.
+    keyid: str = ""
+    agent_token: str | None = None  # aa-agent+jwt when enrolled
+    stable: Ed25519PrivateKey | None = None  # long-term key (identified mode)
+    # Optional CIMD URL describing who operates this agent. Display metadata
+    # for the owner's approval dialog, never an authorization input.
+    client_id: str | None = None
+    # Optional Web Bot Auth directory URL, covered by the request signature.
+    signature_agent: str | None = None
+
+    def publish(self, client, operator_origin: str) -> str | None:
+        """Publish the signing key to the operator's Web Bot Auth directory.
+
+        Returns the `Signature-Agent` value to send, or None if the directory
+        is unreachable — discovery is additive, so a resource that cannot
+        resolve it still verifies against the key in the RPT's `cnf`. The
+        directory never becomes the authority; it only lets a stranger's
+        authorization server attribute a key it has never seen before.
+        """
+        try:
+            import os
+            token = os.environ.get("UMA4A_OPERATOR_REGISTER_TOKEN")
+            r = client.post(f"{operator_origin}/register",
+                            json={"keyid": self.keyid, "jwk": self.public_jwk()},
+                            headers={"Authorization": f"Bearer {token}"} if token else None,
+                            timeout=5.0)
+            r.raise_for_status()
+            return f"{operator_origin}/.well-known/http-message-signatures-directory"
+        except Exception:
+            return None
+
+    @staticmethod
+    def _load_or_create_key(path: str) -> Ed25519PrivateKey:
+        import os
+
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                return serialization.load_pem_private_key(f.read(), password=None)
+        key = Ed25519PrivateKey.generate()
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(
+                key.private_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PrivateFormat.PKCS8,
+                    serialization.NoEncryption(),
+                )
+            )
+        return key
+
+    @classmethod
+    def load_or_create(cls, path: str) -> "AgentKeys":
+        """Pseudonymous identity: one persisted signing key."""
+        return cls(key=cls._load_or_create_key(path))
+
+    @classmethod
+    def load_or_create_identified(cls, path: str) -> "AgentKeys":
+        """Identified identity: persisted stable key + fresh session key.
+        Enroll with uma4a_enroll.enroll() to obtain the agent_token."""
+        return cls(key=Ed25519PrivateKey.generate(),
+                   stable=cls._load_or_create_key(path))
+
+    def __post_init__(self) -> None:
+        if not self.keyid:
+            import base64, hashlib
+            from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+            raw = self.key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
+            self.keyid = "agent-" + base64.urlsafe_b64encode(
+                hashlib.sha256(raw).digest()).rstrip(b"=").decode()[:16]
+
+    def public_jwk(self) -> dict:
+        jwk = json.loads(OKPAlgorithm.to_jwk(self.key.public_key()))
+        if self.jws_alg() == uma4a_jose.ED25519:
+            jwk["alg"] = uma4a_jose.ED25519
+        return jwk
+
+    def jws_alg(self) -> str:
+        """The algorithm this agent's JWS are verified with, which is the one
+        its key names. An agent token's `cnf.jwk` may name `Ed25519`, as AAuth's
+        current text has it; a key that names nothing — an earlier token's, or
+        a bare pseudonymous key — signs `EdDSA`."""
+        if self.agent_token:
+            claims = jwt.decode(self.agent_token, options={"verify_signature": False})
+            if ((claims.get("cnf") or {}).get("jwk") or {}).get("alg") == uma4a_jose.ED25519:
+                return uma4a_jose.ED25519
+        return "EdDSA"
+
+    def connection_handle(self) -> str:
+        """The handle the owner's authority will file this agent under.
+
+        Mirrors `connection_handle` on the authorization server, and the
+        requesting side can compute it because both halves are things it
+        already holds. Worth having here rather than open-coded by every
+        caller that wants to find its own row: two copies of an RFC 7638
+        thumbprint is two chances to disagree with the server about who this
+        agent is.
+
+        An identified agent is its issuer-qualified subject, because its
+        session key rotates. A pseudonymous one *is* its key.
+        """
+        if self.agent_token:
+            claims = jwt.decode(self.agent_token, options={"verify_signature": False})
+            # Qualified as the authority qualifies it: by the whole issuer,
+            # port and path included, so the two always name one connection.
+            issuer = urlparse(claims.get("iss", ""))
+            sub, where = claims.get("sub", ""), issuer.netloc + issuer.path.rstrip("/")
+            return sub if sub.endswith(f"@{where}") else f"{sub}@{where}"
+        return self.thumbprint()
+
+    def thumbprint(self) -> str:
+        """RFC 7638 thumbprint of the signing key, always.
+
+        Separate from `connection_handle` because the two answer different
+        questions. The handle is *who the owner files this agent under*, and
+        for an identified agent that is its issuer-qualified subject. The
+        thumbprint is *which key signed this*, and an introduction binds to
+        that — the child's key is the thing the parent is vouching for, and
+        the only thing the owner's authority can check against the JWS in
+        front of it.
+        """
+        return jwk_thumbprint(self.public_jwk())
+
+
+@dataclass
+class Challenge:
+    """A parsed WWW-Authenticate: UMA challenge. `resource_metadata` is the
+    RFC 9728 pointer the resource may add so the client can corroborate
+    `as_uri` against the resource's own published metadata."""
+
+    as_uri: str
+    ticket: str
+    resource_metadata: str | None = None
+
+    def __iter__(self):  # (as_uri, ticket) unpacking still works
+        return iter((self.as_uri, self.ticket))
+
+
+def parse_challenge(www_authenticate: str) -> Challenge | None:
+    """Parses a WWW-Authenticate: UMA header."""
+    if not www_authenticate or "UMA" not in www_authenticate:
+        return None
+    m_as = re.search(r'as_uri="([^"]+)"', www_authenticate)
+    m_t = re.search(r'ticket="([^"]+)"', www_authenticate)
+    if not (m_as and m_t):
+        return None
+    m_rm = re.search(r'resource_metadata="([^"]+)"', www_authenticate)
+    return Challenge(m_as.group(1), m_t.group(1),
+                     m_rm.group(1) if m_rm else None)
+
+
+def well_known_prm_url(resource_url: str) -> str:
+    """RFC 9728 §3: the metadata URL is formed by inserting the well-known
+    path between host and any resource path component."""
+    u = httpx.URL(resource_url)
+    port = f":{u.port}" if u.port else ""
+    path = u.path.rstrip("/")
+    return (f"{u.scheme}://{u.host}{port}"
+            f"/.well-known/oauth-protected-resource{path}")
+
+
+class DiscoveryMismatch(Exception):
+    """The resource's published metadata contradicts what the client was
+    told — wrong `resource` value, or a challenge naming an AS the resource
+    never published."""
+
+
+def validate_resource_metadata(doc: dict, resource_url: str,
+                               as_uri: str | None = None,
+                               named: str | None = None) -> dict:
+    """RFC 9728 §3.3 client validation: the `resource` value must identify
+    the resource being accessed. When a challenge is in hand, its as_uri
+    must be among the published authorization_servers — the TLS-anchored
+    metadata corroborates the (unauthenticated) challenge header.
+
+    `doc` is the document found from the resource this client called, as
+    RFC 9728 §3 forms the URL, never from where a challenge points: a forged
+    challenge can name a document on its own host that lists its own
+    authorization server. A challenge whose `resource_metadata` (`named`)
+    points anywhere else is refused for the same reason."""
+    if named is not None and named != well_known_prm_url(resource_url):
+        raise DiscoveryMismatch(
+            f"challenge names metadata at {named}, not "
+            f"{well_known_prm_url(resource_url)}")
+    if doc.get("resource") != resource_url:
+        raise DiscoveryMismatch(
+            f"metadata is for {doc.get('resource')!r}, not {resource_url!r}")
+    if as_uri is not None and as_uri not in doc.get("authorization_servers", []):
+        raise DiscoveryMismatch(
+            f"challenge names AS {as_uri}, which the resource's metadata "
+            f"does not publish ({doc.get('authorization_servers')})")
+    return doc
+
+
+# A parent agent's statement that another key belongs to a sibling it is
+# putting forward. Not a grant and not a token: it carries no scope, no tier
+# and no authority, and presenting one gets an agent nothing except the
+# chance to negotiate for itself.
+INTRODUCTION_TYP = "u4a-introduction-v1+jws"
+
+# How many times an agent will sign terms dictated again in one negotiation.
+MAX_DICTATIONS = 3
+
+
+def sign_introduction(keys: AgentKeys, child_jkt: str, as_uri: str,
+                      ttl: int = 300) -> str:
+    """Sign an introduction for a sub-agent, as the introducing agent.
+
+    The claims deliberately say nothing about *who is introducing*. An `iss`
+    naming the parent would be a field the owner's authority must either
+    ignore or believe, and believing it would let any agent nominate another
+    agent's handle as its own sponsor. So the parent's identity is carried
+    only where it can be checked: the public key in the JWS header, which
+    verifies the signature and re-derives to a handle the authority already
+    holds. Everything the claims contain is scoped to the one child.
+
+    `aud` pins the introduction to a single authorization server, so one
+    obtained for Alice's is not replayable at Carol's. `exp` is short because
+    an introduction is cheap to re-mint and its whole lifetime is the window
+    in which a leaked copy is worth anything — though a copy is worth little
+    on its own, since only the holder of the child's key can use it.
+    """
+    now = int(time.time())
+    claims = {
+        "sub": child_jkt,
+        "aud": as_uri,
+        "iat": now,
+        "exp": now + ttl,
+        "jti": f"int_{hashlib.sha256(f'{child_jkt}{now}'.encode()).hexdigest()[:12]}",
+    }
+    headers = {"typ": INTRODUCTION_TYP, "kid": keys.keyid,
+               "jwk": keys.public_jwk()}
+    # An identified parent is filed under its issuer-qualified subject rather
+    # than its key, so the authority needs the token to work out which
+    # connection this is. The key stays in the header regardless — it is what
+    # verifies this signature, and the authority checks the two agree.
+    if keys.agent_token:
+        headers["agent_token"] = keys.agent_token
+    return jwt.encode(claims, keys.key, algorithm=keys.jws_alg(), headers=headers)
+
+
+def sign_contract(template: dict, keys: AgentKeys, as_uri: str,
+                  operation: dict | None = None,
+                  reason: str | None = None,
+                  mission: dict | None = None,
+                  introduction: str | None = None) -> str:
+    """Echo the proffered template, signed — the agreement half of the
+    MyTerms exchange. Weakening any field is caught by the AS; this client
+    doesn't try.
+
+    Everything above `operation` is the owner's, repeated. `operation` and
+    `reason` are the only things the requesting side contributes: what it
+    proposes to do, and why it says it is asking. The owner's authority never
+    compares `reason` to anything — it is carried so a person can read it and
+    so the agent has signed it."""
+    contract = {
+        "iss": f"agent:{keys.keyid}",
+        "aud": as_uri,
+        "iat": int(time.time()),
+        "template_id": template["template_id"],
+        "terms_uri": template["terms_uri"],
+        "purpose": template["purpose"],
+        "scope": template["scope"],
+        "expires_in": template["expires_in"],
+        "prohibited": template["prohibited"],
+        "nonce": template["nonce"],
+        "family": template["family"],
+    }
+    if operation is not None:
+        contract["operation"] = operation
+    if reason:
+        contract["reason"] = reason
+    # A mandate the requesting side is acting under: who approved it, and the
+    # content hash of what was approved. An AAuth mission is cited as its
+    # person server and its `mission_s256`.
+    if mission:
+        contract["mission"] = mission
+    # A sibling agent's introduction, signed by that sibling over *this*
+    # agent's key. It rides the child's own contract because the child is the
+    # one asking: there is no second request, no borrowed token, and the
+    # contract underneath is signed by the child's key like any other.
+    if introduction:
+        contract["introduction"] = introduction
+    headers = {"typ": "myterms-agreement-v1+jws", "kid": keys.keyid}
+    if keys.agent_token:
+        headers["agent_token"] = keys.agent_token
+    else:
+        headers["jwk"] = keys.public_jwk()
+    # Client ID Metadata Document (draft-ietf-oauth-client-id-metadata-document),
+    # the mechanism MCP now prefers over Dynamic Client Registration. Here it
+    # is applied to the requesting *agent*: a URL the owner's AS can resolve to
+    # a human-readable operator, name and policy. Purely descriptive — the
+    # connection is still keyed by the agent's key or its verified issuer, so
+    # this never becomes an authorization input.
+    if keys.client_id:
+        headers["client_id"] = keys.client_id
+    # Where the operator publishes the keys its agents sign with. Naming the
+    # directory here lets the owner's authorization server check, for itself,
+    # that the operator has published *this* key — turning "a firm says it
+    # operates this agent" into "that firm published this agent's key". It is
+    # still not an authorization input on its own: the connection is keyed by
+    # the agent's key or its verified issuer, and a directory the AS cannot
+    # resolve simply leaves the claim where it was.
+    if keys.signature_agent:
+        headers["signature_agent"] = keys.signature_agent
+    jws = jwt.encode(contract, keys.key, algorithm=keys.jws_alg(), headers=headers)
+    return base64.urlsafe_b64encode(jws.encode()).rstrip(b"=").decode()
+
+
+_PROVIDER_TRUST: dict = {}
+
+# Where a deployment's own CA is conventionally mounted. Consulted only after
+# the caller and the environment have both been asked.
+_LAB_CA_PATHS = ("/driver/rootCA.pem", "/certs/rootCA.pem")
+
+
+def provider_trust(ca_bundle: str = ""):
+    """What to verify an identity provider's TLS against.
+
+    An agent's own client is configured for the resource server it came to
+    talk to, which in a private deployment means a private CA and *only* that
+    CA. An identity provider is the one party in this exchange that may
+    legitimately be somewhere else, with an ordinary public certificate — so
+    the exchange gets a trust store with the public roots *and* whatever
+    private CA the agent was given.
+
+    Both halves matter, and dropping either breaks a different deployment.
+    Public roots alone cannot verify a provider inside the lab; a private CA
+    alone cannot verify a real tenant, and fails as `CERTIFICATE_VERIFY_FAILED`
+    at the moment the agent leaves the deployment — which reads like the
+    provider being unreachable rather than like a trust store that was never
+    going to work.
+    """
+    import os
+
+    private = (ca_bundle
+               or os.environ.get("UMA4A_CA_BUNDLE")
+               or os.environ.get("UMA4A_CACERT") or "")
+    if not private or not os.path.exists(private):
+        private = next((p for p in _LAB_CA_PATHS if os.path.exists(p)), "")
+    if private in _PROVIDER_TRUST:
+        return _PROVIDER_TRUST[private]
+
+    if not private:
+        _PROVIDER_TRUST[private] = True          # public roots only
+        return True
+    try:
+        import certifi
+        import tempfile
+        # A private file, not a fixed shared path: anyone who could write a
+        # predictable /tmp name could add a CA this agent then trusts for its
+        # enterprise credentials.
+        fd, combined = tempfile.mkstemp(prefix="u4a-provider-trust-", suffix=".pem")
+        with os.fdopen(fd, "w") as out:
+            out.write(open(certifi.where()).read())
+            out.write("\n")
+            out.write(open(private).read())
+        _PROVIDER_TRUST[private] = combined
+    except Exception:                                           # noqa: BLE001
+        # No public roots to be had; a provider inside the deployment still
+        # verifies, which is the shipped arrangement.
+        _PROVIDER_TRUST[private] = private
+    return _PROVIDER_TRUST[private]
+
+
+def jsonrpc_challenge(payload: dict | None) -> tuple[str, str] | None:
+    """(as_uri, ticket) from a challenge that arrived as a JSON-RPC error.
+
+    A resource enforcing in-process has no status line to put
+    `WWW-Authenticate` on, so the same parameters arrive in the error's data,
+    with the same `error` value the header carries.
+    """
+    data = (((payload or {}).get("error") or {}).get("data")) or {}
+    if not isinstance(data, dict):
+        return None
+    if data.get("error") == "insufficient_authorization" \
+            and data.get("as_uri") and data.get("ticket"):
+        return data["as_uri"], data["ticket"]
+    return None
+
+
+def refusal(status: int, body: dict | None) -> tuple[str, bool]:
+    """The refusal value an enforcement point answered with, and whether it is
+    terminal.
+
+    Only `temporarily_unavailable` says the same request may be sent again.
+    Every other value, including one this client has never heard of, is
+    final for the token it was sent with: treating an unknown value as
+    retryable would turn every value added after this client was written into
+    a loop.
+    """
+    body = body or {}
+    data = (body.get("error") or {}).get("data") if isinstance(body.get("error"), dict) else None
+    value = (data or {}).get("error") if isinstance(data, dict) else body.get("error")
+    value = value if isinstance(value, str) and value else f"http_{status}"
+    return value, value != "temporarily_unavailable"
+
+
+def receipt_filename(receipt_jws: str) -> str:
+    """The file a counter-signed receipt is kept under, named for its
+    negotiation.
+
+    Read from the receipt's payload without verifying it, which is fine for
+    choosing a name and for nothing else — so the name is held to the
+    characters a family id is made of. Anything wider lets whoever produced
+    the receipt choose where on this machine it is written.
+    """
+    import base64
+    import json
+    import re
+
+    try:
+        family = json.loads(base64.urlsafe_b64decode(
+            receipt_jws.split(".")[1] + "==")).get("family")
+    except Exception:                                           # noqa: BLE001
+        family = None
+    if not isinstance(family, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", family):
+        family = "unknown"
+    return f"{family}.receipt.jws"
+
+
+def identity_ask(body: dict) -> dict | None:
+    """The identity requirement in a `need_info`, if that is what it is."""
+    for claim in body.get("required_claims") or []:
+        if claim.get("claim_type") == ID_JAG_CLAIM:
+            return claim
+    return None
+
+
+def id_jag_request(ask: dict, enterprise: "Enterprise",
+                   as_uri: str | None = None) -> tuple[str, dict]:
+    """Where to go and what to ask for.
+
+    The resource side contributes everything about where an assertion will
+    be honoured: the audience, the resource, the scope, which provider it
+    believes. The agent contributes who it is — and decides where its
+    credentials go. They go to the provider they belong to or nowhere: a
+    challenge naming a different provider, or a token endpoint off that
+    provider's origin, is refused before anything is sent.
+    """
+    from urllib.parse import urlparse
+
+    # The assertion is minted for an audience, and it is only ever sent back
+    # to the server this agent is negotiating with. An ask naming another
+    # audience would have this agent fetch an assertion meant for a different
+    # authorization server and hand it to whoever asked.
+    if as_uri is not None and (ask.get("audience") or "").rstrip("/") != as_uri.rstrip("/"):
+        raise GrantDenied(
+            f"the resource asks for an assertion addressed to "
+            f"{ask.get('audience') or 'no audience'}, not to {as_uri}, the "
+            "authorization server this agent is negotiating with")
+    idp = ask.get("identity_provider") or {}
+    pinned = (enterprise.issuer or "").rstrip("/")
+    named = (idp.get("issuer") or "").rstrip("/")
+    if not pinned:
+        raise GrantDenied(
+            "this agent's enterprise credentials name no identity provider, "
+            "so there is nowhere it may send them")
+    if named != pinned:
+        raise GrantDenied(
+            f"the resource wants an assertion from {named or 'an unnamed provider'}, "
+            f"and this agent's credentials belong to {pinned}")
+    endpoint = (enterprise.token_endpoint or idp.get("token_endpoint")
+                or f"{pinned}/token")
+    if not enterprise.token_endpoint:
+        told, own = urlparse(endpoint), urlparse(pinned)
+        if (told.scheme, told.netloc) != (own.scheme, own.netloc):
+            raise GrantDenied(
+                f"the resource names {endpoint} as where to exchange, which is "
+                f"not at {pinned}")
+    return endpoint, {
+        "grant_type": idp.get("grant_type") or TOKEN_EXCHANGE,
+        "requested_token_type": idp.get("requested_token_type") or ID_JAG_FORMAT,
+        "subject_token": enterprise.subject_token,
+        "subject_token_type": (
+            enterprise.subject_token_type
+            or (ask.get("identity_provider") or {}).get(
+                "subject_token_types_supported", [ID_TOKEN_TYPE])[0]),
+        "audience": ask.get("audience") or "",
+        "resource": ask.get("resource") or "",
+        "scope": " ".join(ask.get("scope") or []),
+        "client_id": enterprise.client_id,
+        "client_secret": enterprise.client_secret,
+    }
+
+
+def id_jag_from(response) -> str:
+    body = response.json()
+    if response.status_code != 200:
+        raise GrantDenied(
+            "the identity provider would not assert this: "
+            + (body.get("error_description") or body.get("error", "unknown")))
+    if body.get("issued_token_type") != ID_JAG_FORMAT:
+        raise GrantDenied(
+            f"the identity provider issued {body.get('issued_token_type')!r}, "
+            f"not an identity assertion")
+    return body["access_token"]
+
+
+def run_grant(
+    client: httpx.Client,
+    as_uri: str,
+    ticket: str,
+    keys: AgentKeys,
+    approve_terms: Callable[[dict], bool],
+    operation: dict | None = None,
+    reason: str | None = None,
+    mission: dict | None = None,
+    introduction: str | None = None,
+    on_status: Callable[[str], None] = lambda s: None,
+    on_receipt: Callable[[str], None] = lambda r: None,
+    max_wait_s: int = 120,
+    enterprise: "Enterprise | None" = None,
+) -> str:
+    """Walks beats 2-4. Returns the RPT; the counter-signed MyTerms receipt
+    (the agent's half of the dual record) is delivered via on_receipt.
+    Raises GrantDenied / TermsRejected."""
+    token_url = f"{as_uri}/token"
+
+    on_status("presenting ticket at Alice's AS")
+    r = client.post(token_url, data={"grant_type": GRANT_TYPE, "ticket": ticket})
+    body = r.json()
+
+    # Bounded rather than once: terms that changed between proffer and commit
+    # — an organization's ceiling re-applied, her own edit — are dictated
+    # again, and the agent agrees to what is in force or to nothing.
+    for _ in range(MAX_DICTATIONS):
+        # Beat 1a: the server wants to know whose agent this is before it will
+        # say anything about terms. Nothing was arranged in advance — where to go
+        # and what to ask for are both in what it just said.
+        if (ask := identity_ask(body)) is not None:
+            if enterprise is None:
+                raise GrantDenied(
+                    "this resource is governed by an organization that federates "
+                    "identity, and this agent carries no enterprise credentials")
+            endpoint, payload = id_jag_request(ask, enterprise, as_uri)
+            on_status(f"identity required — exchanging at {endpoint}")
+            # A client of its own, trusting the provider's world as well as this
+            # deployment's — see `provider_trust`.
+            with httpx.Client(verify=provider_trust(enterprise.ca_bundle),
+                              timeout=30.0) as idp:
+                assertion = id_jag_from(idp.post(endpoint, data=payload))
+            on_status("assertion obtained, presenting it")
+            r = client.post(token_url, data={"grant_type": GRANT_TYPE,
+                                             "ticket": body["ticket"],
+                                             "claim_token": assertion,
+                                             "claim_token_format": ID_JAG_FORMAT})
+            body = r.json()
+        if body.get("error") != "need_info" or "terms_template" not in (
+                (body.get("required_claims") or [{}])[0]):
+            break
+        template = body["required_claims"][0]["terms_template"]
+        on_status(f"terms proffered: {template['purpose']} "
+                  f"(expires {template['expires_in']}s, "
+                  f"prohibited: {', '.join(template['prohibited'])})")
+        if not approve_terms(template):
+            # Refusals are records too (the owner's ledger notes the decline).
+            client.post(token_url, data={"grant_type": GRANT_TYPE,
+                                         "ticket": body["ticket"],
+                                         "decline": "true"})
+            raise TermsRejected(template["template_id"])
+        claim = sign_contract(template, keys, as_uri, operation, reason, mission,
+                              introduction)
+        on_status("agreement signed, committing")
+        r = client.post(
+            token_url,
+            data={
+                "grant_type": GRANT_TYPE,
+                "ticket": body["ticket"],
+                "claim_token": claim,
+                "claim_token_format": AGREEMENT_FORMAT,
+            },
+        )
+        body = r.json()
+
+    deadline = time.time() + max_wait_s
+    while body.get("error") == "request_submitted":
+        on_status("Alice has been asked — holding the ticket")
+        if time.time() > deadline:
+            raise GrantDenied("timed out waiting for the owner")
+        time.sleep(body.get("interval", 3))
+        try:
+            body = client.post(
+                token_url, data={"grant_type": GRANT_TYPE, "ticket": body["ticket"]}
+            ).json()
+        except (httpx.HTTPError, ValueError) as exc:
+            # A poll that did not come back. The ticket is not spent while she
+            # decides, so the same one is presented again next time.
+            on_status(f"poll did not complete ({exc}); asking again")
+
+    if "access_token" in body:
+        on_status("grant issued")
+        if body.get("receipt"):
+            on_receipt(body["receipt"])
+        return body["access_token"]
+    raise GrantDenied(body.get("error_description") or body.get("error", "unknown"))
+
+
+def traceparent() -> str | None:
+    """A W3C Trace Context header for this call, if tracing is on.
+
+    Correlation inside this system is the negotiation family; traceparent is
+    what lets that join a trace spanning the requesting org, the resource, and
+    the owner's authorization server — three parties who share no other id.
+    """
+    import os
+    import secrets
+
+    if os.environ.get("UMA4A_TRACING", "1") in ("0", "false", "no"):
+        return None
+    return f"00-{secrets.token_hex(16)}-{secrets.token_hex(8)}-01"
+
+
+def signed_headers(method: str, authority: str, path: str, rpt: str,
+                   keys: AgentKeys, body: bytes | None = None) -> dict[str, str]:
+    """Authorization + RFC 9421 signature headers for a resource request.
+
+    When the agent has published its key, the signature also covers a Web Bot
+    Auth `Signature-Agent` header naming the directory. That composes with
+    proof-of-possession rather than competing with it: the key that *verifies*
+    is still the one bound into the RPT's `cnf`, and the directory only says
+    where that key was published.
+    """
+    authorization = f"PoP {rpt}"
+    # With the body, the signature covers an RFC 9530 Content-Digest over the
+    # exact bytes sent, so nothing between the agent and the enforcement point
+    # can change a call's arguments without breaking the signature.
+    sig = sign(method, authority, path, authorization, keys.key, keys.keyid,
+               signature_agent=keys.signature_agent, tag="web-bot-auth",
+               body=body)
+    headers = {"Authorization": authorization, **sig}
+    # W3C Trace Context: deliberately *not* covered by the signature. It is
+    # diagnostic metadata a proxy may legitimately rewrite, and binding it
+    # into the signature base would make ordinary tracing look like tampering.
+    if tp := traceparent():
+        headers["traceparent"] = tp
+    return headers
+
+
+async def run_grant_async(
+    client,  # httpx.AsyncClient
+    as_uri: str,
+    ticket: str,
+    keys: AgentKeys,
+    approve_terms,  # async Callable[[dict], bool]
+    operation: dict | None = None,
+    reason: str | None = None,
+    mission: dict | None = None,
+    introduction: str | None = None,
+    on_status: Callable[[str], None] = lambda s: None,
+    on_receipt: Callable[[str], None] = lambda r: None,
+    max_wait_s: int = 120,
+    enterprise: "Enterprise | None" = None,
+    on_pending=None,   # async Callable[[dict], bool] | None
+) -> str:
+    """Async twin of run_grant — the shim awaits elicitation mid-dance.
+
+    `on_pending` is called each time the owner's decision is still outstanding,
+    with the pend's details, and returns whether to keep waiting. It exists so
+    the requesting side does not have to *block* through someone else's
+    decision: a caller that can express waiting to its own user (MCP's
+    input_required) hands the question up instead of holding the call open.
+    Omit it and the loop polls to `max_wait_s`, which is what a headless
+    driver wants.
+    """
+    import asyncio
+
+    token_url = f"{as_uri}/token"
+
+    on_status("presenting ticket at Alice's AS")
+    r = await client.post(token_url, data={"grant_type": GRANT_TYPE, "ticket": ticket})
+    body = r.json()
+
+    for _ in range(MAX_DICTATIONS):
+        if (ask := identity_ask(body)) is not None:
+            if enterprise is None:
+                raise GrantDenied(
+                    "this resource is governed by an organization that federates "
+                    "identity, and this agent carries no enterprise credentials")
+            endpoint, payload = id_jag_request(ask, enterprise, as_uri)
+            on_status(f"identity required — exchanging at {endpoint}")
+            async with httpx.AsyncClient(verify=provider_trust(enterprise.ca_bundle),
+                                         timeout=30.0) as idp:
+                assertion = id_jag_from(await idp.post(endpoint, data=payload))
+            on_status("assertion obtained, presenting it")
+            r = await client.post(token_url, data={"grant_type": GRANT_TYPE,
+                                                   "ticket": body["ticket"],
+                                                   "claim_token": assertion,
+                                                   "claim_token_format": ID_JAG_FORMAT})
+            body = r.json()
+        if body.get("error") != "need_info" or "terms_template" not in (
+                (body.get("required_claims") or [{}])[0]):
+            break
+        template = body["required_claims"][0]["terms_template"]
+        on_status(f"terms proffered: {template['purpose']} "
+                  f"(expires {template['expires_in']}s, "
+                  f"prohibited: {', '.join(template['prohibited'])})")
+        if not await approve_terms(template):
+            # Refusals are records too (the owner's ledger notes the decline).
+            await client.post(token_url, data={"grant_type": GRANT_TYPE,
+                                               "ticket": body["ticket"],
+                                               "decline": "true"})
+            raise TermsRejected(template["template_id"])
+        claim = sign_contract(template, keys, as_uri, operation, reason, mission,
+                              introduction)
+        r = await client.post(
+            token_url,
+            data={
+                "grant_type": GRANT_TYPE,
+                "ticket": body["ticket"],
+                "claim_token": claim,
+                "claim_token_format": AGREEMENT_FORMAT,
+            },
+        )
+        body = r.json()
+
+    deadline = time.time() + max_wait_s
+    while body.get("error") == "request_submitted":
+        on_status("Alice has been asked — holding the ticket")
+        if time.time() > deadline:
+            if on_pending is None:
+                raise GrantDenied("timed out waiting for the owner")
+            # Hand the wait up rather than deciding to abandon it here: only
+            # the requesting human knows whether this is still worth waiting
+            # for. Answering resets the window.
+            if not await on_pending({
+                "as_uri": as_uri,
+                "interval": body.get("interval", 3),
+                "waited_s": max_wait_s,
+                # The live ticket, so a caller that hands the wait back to its
+                # own client can come back to *this* pend later instead of
+                # starting a second one. Without it the only way to retry is a
+                # fresh negotiation, which asks the owner the same question
+                # twice and leaves the first one orphaned in her queue.
+                "ticket": body["ticket"],
+            }):
+                raise GrantDenied("the requesting side stopped waiting for the owner")
+            deadline = time.time() + max_wait_s
+        await asyncio.sleep(body.get("interval", 3))
+        try:
+            body = (await client.post(
+                token_url, data={"grant_type": GRANT_TYPE, "ticket": body["ticket"]}
+            )).json()
+        except (httpx.HTTPError, ValueError) as exc:
+            # As above: the same ticket is good for the next poll.
+            on_status(f"poll did not complete ({exc}); asking again")
+
+    if "access_token" in body:
+        on_status("grant issued")
+        if body.get("receipt"):
+            on_receipt(body["receipt"])
+        return body["access_token"]
+    raise GrantDenied(body.get("error_description") or body.get("error", "unknown"))
+
+
+# --- The MCP envelope --------------------------------------------------------
+#
+# Every driver in this repo was carrying its own copy of the 2026-07-28 framing:
+# the protocol version, the two routing headers, the Accept that admits an SSE
+# body, and the unwrapping of `data:` frames. Six copies of the one thing the
+# spec revision most recently changed, and the one thing a future revision will
+# change again.
+
+MCP_PROTOCOL_VERSION = "2026-07-28"
+
+
+def mcp_meta(client_name: str, version: str = "0.1") -> dict:
+    return {
+        "io.modelcontextprotocol/protocolVersion": MCP_PROTOCOL_VERSION,
+        "io.modelcontextprotocol/clientCapabilities": {},
+        "io.modelcontextprotocol/clientInfo": {"name": client_name, "version": version},
+    }
+
+
+def mcp_call(client, url: str, method: str, params: dict, meta: dict,
+             headers: dict | None = None, timeout: float = 30.0):
+    """One JSON-RPC call over MCP streamable-http. Returns the parsed response.
+
+    `Mcp-Method` and `Mcp-Name` are sent because SEP-2243 requires them on
+    2026-07-28, and because an enforcement point is entitled to route on them —
+    it must also reconcile them against the body, which is why they are set
+    from the same values rather than passed in separately.
+    """
+    p = dict(params)
+    p["_meta"] = meta
+    h = {
+        "content-type": "application/json",
+        "accept": "application/json, text/event-stream",
+        "MCP-Protocol-Version": MCP_PROTOCOL_VERSION,
+        "Mcp-Method": method,
+    }
+    if method == "tools/call":
+        h["Mcp-Name"] = params.get("name", "")
+    h.update(headers or {})
+    r = client.post(url, json={"jsonrpc": "2.0", "method": method, "id": 1,
+                               "params": p}, headers=h, timeout=timeout)
+    return r
+
+
+def mcp_json(response) -> dict:
+    """The JSON body, whether it arrived plain or as a single SSE frame."""
+    body = response.text
+    for line in body.splitlines():
+        if line.startswith("data:"):
+            body = line[5:].strip()
+    return json.loads(body)

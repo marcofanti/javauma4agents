@@ -1,0 +1,66 @@
+[
+  {
+    "value": {
+      "symbol": "VTI",
+      "side": "sell",
+      "quantity": 40
+    },
+    "compact_sorted_unicode": "{\"quantity\":40,\"side\":\"sell\",\"symbol\":\"VTI\"}",
+    "compact_ordered": "{\"symbol\":\"VTI\",\"side\":\"sell\",\"quantity\":40}"
+  },
+  {
+    "value": {
+      "note": "café ☕",
+      "z": [
+        1,
+        2.5,
+        null,
+        true
+      ],
+      "a": {
+        "nested": "ü"
+      }
+    },
+    "compact_sorted_unicode": "{\"a\":{\"nested\":\"ü\"},\"note\":\"café ☕\",\"z\":[1,2.5,null,true]}",
+    "compact_ordered": "{\"note\":\"caf\\u00e9 \\u2615\",\"z\":[1,2.5,null,true],\"a\":{\"nested\":\"\\u00fc\"}}"
+  },
+  {
+    "value": {
+      "😀": 1,
+      "￿": 2,
+      "a": 3
+    },
+    "compact_sorted_unicode": "{\"a\":3,\"￿\":2,\"😀\":1}",
+    "compact_ordered": "{\"\\ud83d\\ude00\":1,\"\\uffff\":2,\"a\":3}"
+  },
+  {
+    "value": {
+      "price": 0.1,
+      "big": 1e+21,
+      "small": 1.5e-07,
+      "neg": -0.0,
+      "int": 10
+    },
+    "compact_sorted_unicode": "{\"big\":1e+21,\"int\":10,\"neg\":-0.0,\"price\":0.1,\"small\":1.5e-07}",
+    "compact_ordered": "{\"price\":0.1,\"big\":1e+21,\"small\":1.5e-07,\"neg\":-0.0,\"int\":10}"
+  },
+  {
+    "value": {
+      "ctrl": "tab\tnew\nline\u0001",
+      "quote": "\"\\"
+    },
+    "compact_sorted_unicode": "{\"ctrl\":\"tab\\tnew\\nline\\u0001\",\"quote\":\"\\\"\\\\\"}",
+    "compact_ordered": "{\"ctrl\":\"tab\\tnew\\nline\\u007f\\u0001\",\"quote\":\"\\\"\\\\\"}"
+  },
+  {
+    "value": [
+      {
+        "b": 1,
+        "a": 2
+      },
+      "√2"
+    ],
+    "compact_sorted_unicode": "[{\"a\":2,\"b\":1},\"√2\"]",
+    "compact_ordered": "[{\"b\":1,\"a\":2},\"\\u221a2\"]"
+  }
+]

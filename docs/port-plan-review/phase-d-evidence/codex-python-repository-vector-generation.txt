@@ -1,0 +1,7 @@
+Two isolated CPython 3.12.12 runs produced byte-identical outputs.
+The three prior signature, JSON, and agent-token vector files remained byte-identical.
+Phase D vector SHA-256: 25f8207ec5548997615932e03078e60b48d35898fe368b7c4514b0c209aa7f93
+policy vocabulary=24, durations=22, lanes=4, validate=38, evaluate=1242, new_tier=15, apply_patch=9
+assurance assess=9, describe=3
+consequence normalise=11, at_or_above=121, annotations=9, single_use=11
+introduction verify=11, admit=9

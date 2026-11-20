@@ -1,0 +1,4 @@
+Pinned requester claim cases checked: 25
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.112 s -- in io.uma4agents.authserver.CodexRequesterClaimsOracleTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

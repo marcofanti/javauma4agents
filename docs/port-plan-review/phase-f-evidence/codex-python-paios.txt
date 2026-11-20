@@ -1,0 +1,8 @@
+PASS: the owner's signed fixture approval admitted its named test agent
+   found by its own AbilitiesManager, under abilities/<id>/<semver>/
+   granted — the personal AI answered, she was not disturbed
+   refused — and that is correct
+PASS: pAI-OS hosted the ability, and the ability decided for her.
+PASS: pAI-OS refused an unfamiliar agent despite tier1 standing consent
+PASS: pAI-OS refused an ask-me operation by the established agent
+PASS: the ability logged one standing authorization and all three refusals

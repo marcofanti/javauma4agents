@@ -1,0 +1,4 @@
+PASS: signed resource metadata contains every declared consequence
+PASS: the AS pulled and exposes those consequence classes
+PASS: marked consequence rules cannot relax, and configured clearance is refused
+PASS: an owner can claim and withdraw an operator over the signed owner API

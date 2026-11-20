@@ -1,18 +1,15 @@
 package io.uma4agents.pep;
 
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-import io.uma4agents.common.HttpSignature;
-import io.uma4agents.common.Jwks;
-import io.uma4agents.common.PyJson;
-import io.uma4agents.common.S256;
+import io.uma4agents.pep.core.AuthzFacts;
+import io.uma4agents.pep.core.Decision;
+import io.uma4agents.pep.core.McpRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,21 +18,22 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The ext_authz verdict endpoint ({@code /check<original path>}) plus RFC 9728
- * Protected Resource Metadata and health. Never proxies traffic — returns
- * 200/401/403 verdicts to agentgateway.
+ * agentgateway's ext_authz callback ({@code /check<original path>}): HTTP facts in, HTTP
+ * verdict out. Every decision is made by the shared enforcement core; this host reads the
+ * request, bounds the body, resolves the route, and renders the Decision as a status line
+ * and, on a challenge, the UMA header. It never proxies traffic.
  */
 @RestController
 public class CheckController {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     private final PepConfig config;
-    private final AsClient as;
+    private final OrganizationRoutes organizations;
+    private final JointRoutes joints;
 
-    public CheckController(PepConfig config, AsClient as) {
+    public CheckController(PepConfig config, OrganizationRoutes organizations, JointRoutes joints) {
         this.config = config;
-        this.as = as;
+        this.organizations = organizations;
+        this.joints = joints;
     }
 
     @RequestMapping(value = {"/check", "/check/**"},
@@ -46,205 +44,137 @@ public class CheckController {
         if (originalPath.isEmpty()) {
             originalPath = "/";
         }
-        byte[] body = request.getInputStream().readAllBytes();
-
-        String method = null;
-        String tool = null;
-        Map<String, Object> args = null;
-        if (body.length > 0) {
-            Object[] parsed = parseMcp(body);
-            method = (String) parsed[0];
-            tool = (String) parsed[1];
-            @SuppressWarnings("unchecked")
-            Map<String, Object> parsedArgs = (Map<String, Object>) parsed[2];
-            args = parsedArgs;
+        byte[] body = boundedBody(request);
+        if (body == null) {
+            return deny(413, Map.of("error", "invalid_request",
+                    "error_description", "request body too large"));
         }
+        return decide(request, originalPath, body);
+    }
 
-        // Non-POST and bodiless requests carry no invocation to authorize.
+    ResponseEntity<Object> decide(HttpServletRequest request, String originalPath,
+                                          byte[] body) {
+        if ("true".equals(request.getHeader("x-envoy-auth-partial-body"))) {
+            config.log.event("access.denied", null, "reason", "truncated-body",
+                    "path", originalPath);
+            return deny(413, Map.of("error", "request_body_too_large",
+                    "error_description", "the call exceeded the gateway's authorization body "
+                            + "limit, so the tool being invoked could not be determined"));
+        }
+        McpRequest mcp = body.length > 0 ? McpRequest.parse(body)
+                : new McpRequest(null, null, null, null);
+        Decision refused = config.ownerRoute(config.owner).enforcer()
+                .originRefused(request.getHeader("origin"));
+        if (refused != null) {
+            return deny(refused.status(), Map.of("error", refused.error()));
+        }
         if (!"POST".equals(request.getMethod())
-                || (method == null && tool == null && body.length == 0)) {
+                || (mcp.method() == null && mcp.tool() == null && body.length == 0)) {
             return ResponseEntity.ok().build();
         }
-        // Deny by default: only named-open methods pass unauthenticated, and
-        // only named-protected methods reach enforcement. An unknown method is
-        // neither.
-        if (ToolCatalog.OPEN_METHODS.contains(method)) {
-            return ResponseEntity.ok().build();
-        }
-        if (!ToolCatalog.PROTECTED_METHODS.contains(method)) {
-            config.log.event("access.denied", null, "reason", "unknown-method",
-                    "mcp_method", method);
-            return deny(403, Map.of("error", "unknown_method",
-                    "error_description", method + " is not enforceable by this PEP"));
-        }
-        if (tool == null || !ToolCatalog.TOOLS.containsKey(tool)) {
-            config.log.event("access.denied", null, "reason", "unknown-tool", "tool", tool);
-            return deny(403, Map.of("error", "unknown_tool"));
-        }
-
-        String authz = request.getHeader("authorization");
-        if (authz == null || authz.isEmpty()) {
-            return challenge(tool, originalPath);
-        }
-
-        if (!authz.startsWith("PoP ")) {
-            return deny(401, Map.of("error", "invalid_token",
-                    "error_description", "RPTs are PoP tokens here, not Bearer"));
-        }
-        String rpt = authz.substring(4);
-
-        boolean singleUse = ToolCatalog.SINGLE_USE_TOOLS.contains(tool);
-        // Enforcement order matters, and the naive order is a live denial of
-        // service: consuming a single-use RPT here — before the signature is
-        // checked — lets anyone who observes the token destroy a grant the
-        // owner personally approved, just by replaying it unsigned. Nothing is
-        // spent until every check below has passed.
-        Map<String, Object> info;
-        try {
-            info = as.introspect(rpt);
-        } catch (RuntimeException e) {
-            return deny(503, Map.of("error", "as_unreachable"));
-        }
-        if (!Boolean.TRUE.equals(info.get("active"))) {
-            String reason = info.get("error") instanceof String s ? s : "inactive";
-            config.log.event("access.denied", null, "reason", "inactive-rpt: " + reason,
-                    "tool", tool);
-            // A revoked connection is a settled decision, not a missing one.
-            // Re-challenging would send the agent round a negotiation loop
-            // whose outcome the owner has already fixed.
-            if ("connection_revoked".equals(reason)) {
-                return deny(403, Map.of("error", "access_revoked",
-                        "error_description", "the resource owner revoked this agent"));
-            }
-            return challenge(tool, originalPath);
-        }
-
-        ToolCatalog.Surface surface = ToolCatalog.TOOLS.get(tool);
-        Set<String> granted = new TreeSet<>();
-        if (info.get("permissions") instanceof List<?> permissions) {
-            for (Object p : permissions) {
-                if (p instanceof Map<?, ?> permission) {
-                    granted.add(String.valueOf(permission.get("resource_id")));
+        String account = joints.accountAt(originalPath);
+        if (account != null) {
+            try {
+                JointRoutes.Joint joint = joints.route(account);
+                if (joint == null) {
+                    return deny(404, Map.of("error", "no_mandate"));
                 }
+                return render(joints.authorize(joint, facts(request, originalPath, body, mcp)),
+                        originalPath, joint.enforcer());
+            } catch (JointRoutes.Unavailable unavailable) {
+                return deny(503, Map.of("error", "temporarily_unavailable",
+                        "error_description", unavailable.getMessage()));
             }
         }
-        if (!granted.contains(surface.resourceId())) {
-            config.log.event("access.denied", null, "reason", "permission-scope",
-                    "tool", tool, "granted", List.copyOf(granted));
-            return challenge(tool, originalPath);
-        }
-
-        // Proof of possession: the request signature must verify against the
-        // RPT's cnf key, over components that include the Authorization header.
-        try {
-            Object cnf = info.get("cnf");
-            if (!(cnf instanceof Map<?, ?> cnfMap) || !(cnfMap.get("jwk") instanceof Map)) {
-                throw new HttpSignature.VerifyException("no cnf key");
-            }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> jwk = (Map<String, Object>) ((Map<?, ?>) cnf).get("jwk");
-            HttpSignature.verify(
-                    request.getMethod(),
-                    config.expectedAuthority,
-                    originalPath,
-                    authz,
-                    header(request, "signature-input"),
-                    header(request, "signature"),
-                    Jwks.toPublicKey(jwk));
-        } catch (HttpSignature.VerifyException | IllegalArgumentException e) {
-            config.log.event("access.denied", null, "reason", "pop: " + e.getMessage(),
-                    "tool", tool, "method", request.getMethod(),
-                    "authority", header(request, "host"), "path", originalPath,
-                    "signature_input", header(request, "signature-input"));
-            return deny(401, Map.of("error", "invalid_token",
-                    "error_description", "proof-of-possession failed: " + e.getMessage()));
-        }
-
-        // Single-use operation binding: this trade, not trading authority.
-        if (singleUse) {
-            Map<String, Object> op = info.get("operation") instanceof Map<?, ?> operation
-                    ? castMap(operation) : Map.of();
-            Object expected = op.get("params_s256");
-            String actual = S256.of(PyJson.dumpsSorted(args == null ? Map.of() : args));
-            if (!tool.equals(op.get("tool")) || !actual.equals(expected)) {
-                config.log.event("access.denied", null, "reason", "operation-binding",
-                        "tool", tool, "expected", expected, "actual", actual);
-                return deny(403, Map.of("error", "operation_mismatch",
-                        "error_description", "RPT authorizes a different operation"));
-            }
-            // Everything has verified; now spend it. The burn is the atomic
-            // step, so losing the race means another caller got there first
-            // and this request must not proceed.
-            if (!as.consumeRpt(rpt)) {
-                config.log.event("access.denied", null, "reason", "consume-lost-race",
-                        "tool", tool);
-                return deny(403, Map.of("error", "already_consumed",
-                        "error_description", "this single-use grant was already spent"));
+        String sharedOwner = organizations.ownerAt(originalPath);
+        if (sharedOwner != null) {
+            try {
+                OrganizationRoutes.Shared shared = organizations.shared(sharedOwner, false);
+                if (shared == null) {
+                    return deny(403, organizations.notShared());
+                }
+                Decision decision = organizations.authorize(shared,
+                        facts(request, originalPath, body, mcp));
+                return render(decision, originalPath, shared.normal());
+            } catch (OrganizationRoutes.Unavailable unavailable) {
+                return deny(503, Map.of("error", "temporarily_unavailable",
+                        "error_description", unavailable.getMessage()));
             }
         }
-
-        String family = info.get("family") instanceof String f ? f : "?";
-        String contract = info.get("contract") instanceof String c ? c : null;
-        config.log.event("access.allowed", family, "tool", tool, "contract", contract,
-                "single_use", info.getOrDefault("single_use", false));
-        as.reportAccess(family, tool, PyJson.dumpsSorted(args == null ? Map.of() : args));
-        return ResponseEntity.ok()
-                .header("x-uma-contract", contract == null ? "" : contract)
-                .build();
-    }
-
-    private ResponseEntity<Object> challenge(String tool, String originalPath) {
-        ToolCatalog.Surface surface = ToolCatalog.TOOLS.get(tool);
-        String ticket = as.mintTicket(surface.resourceId(), surface.scopes());
-        if (ticket == null) {
-            return deny(503, Map.of("error", "as_unreachable"));
+        PepConfig.OwnerRoute route = routeFor(originalPath);
+        if (route == null) {
+            config.log.event("access.denied", null, "reason", "unknown-route",
+                    "path", originalPath);
+            return deny(404, Map.of("error", "invalid_resource_id", "error_description",
+                    "this gateway serves no owner, shared resource or account at that path"));
         }
-        config.log.event("challenge.issued", null, "tool", tool,
-                "resource_id", surface.resourceId(), "path", originalPath);
-        // RFC 9728 §5.1: the challenge names the resource's metadata document,
-        // so the client can corroborate as_uri against what the resource
-        // publishes instead of taking the header's word for it.
-        String prmUrl = "https://" + config.expectedAuthority
-                + "/.well-known/oauth-protected-resource/mcp";
-        return ResponseEntity.status(401)
-                .header("WWW-Authenticate", "UMA realm=\"" + config.realm
-                        + "\", as_uri=\"" + config.asPublic + "\", ticket=\"" + ticket
-                        + "\", resource_metadata=\"" + prmUrl + "\"")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("error", "uma_challenge"));
+        Decision d = organizations.authorizeOwn(route, facts(request, originalPath, body, mcp));
+        return render(d, originalPath, route.enforcer());
     }
 
-    private static ResponseEntity<Object> deny(int status, Map<String, Object> body) {
-        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
-    }
-
-    /** Returns (jsonrpc_method, tool_name, tool_args) from an MCP POST body. */
-    private static Object[] parseMcp(byte[] body) {
-        Map<String, Object> msg;
-        try {
-            msg = MAPPER.readValue(body, new TypeReference<>() {});
-        } catch (RuntimeException e) {
-            return new Object[] {null, null, null};
+    private ResponseEntity<Object> render(Decision d, String originalPath,
+                                          io.uma4agents.pep.core.Enforcer enforcer) {
+        if (d.outcome() == Decision.Outcome.ALLOW) {
+            return ResponseEntity.ok()
+                    .header("x-uma-contract", d.contract() == null ? "" : d.contract()).build();
         }
-        Object method = msg.get("method");
-        if ("tools/call".equals(method)) {
-            Map<String, Object> params = msg.get("params") instanceof Map<?, ?> p
-                    ? castMap(p) : Map.of();
-            Object args = params.get("arguments");
-            return new Object[] {method, params.get("name"),
-                    args instanceof Map<?, ?> argsMap ? castMap(argsMap) : new LinkedHashMap<>()};
+        if (d.outcome() == Decision.Outcome.CHALLENGE) {
+            Decision routed = d.withResourceMetadata(config.publicBase
+                    + "/.well-known/oauth-protected-resource" + originalPath);
+            return ResponseEntity.status(routed.status())
+                    .header(HttpHeaders.WWW_AUTHENTICATE,
+                            enforcer.wwwAuthenticate(routed))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("error", routed.error()));
         }
-        return new Object[] {method, null, null};
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("error", d.error());
+        if (d.description() != null && !d.description().isEmpty()) {
+            out.put("error_description", d.description());
+        }
+        return deny(d.status(), out);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> castMap(Map<?, ?> map) {
-        return (Map<String, Object>) map;
+    /** The owner served at a path, read by leading segments as the gateway routes. */
+    private PepConfig.OwnerRoute routeFor(String path) {
+        List<String> segments = java.util.Arrays.stream(path.split("\\?", 2)[0].split("/"))
+                .filter(s -> !s.isEmpty()).toList();
+        if (segments.isEmpty() || !"mcp".equals(segments.get(0))) {
+            return null;
+        }
+        return config.ownerRoute(segments.size() == 1 ? config.owner : segments.get(1));
     }
 
-    private static String header(HttpServletRequest request, String name) {
-        String value = request.getHeader(name);
-        return value == null ? "" : value;
+    private AuthzFacts facts(HttpServletRequest request, String path, byte[] body,
+                             McpRequest mcp) {
+        return AuthzFacts.builder().mcp(mcp).httpMethod(request.getMethod()).path(path)
+                .authorization(request.getHeader("authorization"))
+                .signature(request.getHeader("signature"))
+                .signatureInput(request.getHeader("signature-input"))
+                .origin(request.getHeader("origin"))
+                .headerMcpMethod(request.getHeader("mcp-method"))
+                .headerMcpName(request.getHeader("mcp-name"))
+                .protocolVersion(request.getHeader("mcp-protocol-version"))
+                .signatureAgent(request.getHeader("signature-agent"))
+                .traceparent(request.getHeader("traceparent"))
+                .body(body).contentDigest(request.getHeader("content-digest")).build();
+    }
+
+    /** The body, read once and bounded before anything parses it; null when too large. */
+    byte[] boundedBody(HttpServletRequest request) throws IOException {
+        long declared = request.getContentLengthLong();
+        if (declared > config.maxBodyBytes) {
+            return null;
+        }
+        try (InputStream in = request.getInputStream()) {
+            byte[] body = in.readNBytes(config.maxBodyBytes + 1);
+            return body.length > config.maxBodyBytes ? null : body;
+        }
+    }
+
+    private static ResponseEntity<Object> deny(int status, Map<String, ?> body) {
+        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
     @GetMapping("/health")

@@ -1,0 +1,154 @@
+Release database 17.12
+Vendored tree matches 67 pinned upstream blobs
+[INFO] Tests run: 29, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 199, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+=== shim-test
+PASS: shim exposes the vault tools
+PASS: first contact connects, then tier 1 grants
+PASS: terms were rendered inside the agent
+PASS: tier 3 pends, Alice approves, trade executes
+PASS: standing-config fallback (no elicitation client)
+PASS: call completes after the owner decides
+PASS: the wait was handed back to Bob, not held open
+PASS: the pend names a principal Bob is not and cannot reach
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+11 passed, 0 failed
+PASS: a second implementation, sharing no code with the first, ran the four beats.
+=== decline-check
+4 passed, 0 failed
+=== demo-acts-a
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+=== demo-acts-b
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+=== flow-check
+PASS: agent identity stayed on the requesting side.
+=== embedded-check
+PASS: a resource enforced its owner's UMA policy with no gateway
+=== smoke-alice
+  uma-as: OK
+  uma_profiles_supported: OK
+  advertised formats: OK
+  no RReg: OK
+  jwks: OK
+  keycloak: OK
+  resource metadata (alice): OK
+  gateway challenge: OK
+  ext_authz body passthrough: OK
+  truncated body: OK
+  portal: OK
+  agent CIMD: OK
+  signatures directory: OK
+  alice operator CIMD: OK
+  person-server: OK
+  grafana: OK
+  loki events: OK (codex-release-java-uma-pep-1)
+  trace events: OK (codex-release-java-uma-pep-1)
+=== fixture
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+=== rotation-check
+2 passed, 0 failed
+5 passed, 0 failed
+PASS: the authority rotated its key and nothing it had issued stopped working.
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+=== store-test
+[INFO] Tests run: 122, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+=== intent-check
+42 passed, 0 failed
+PASS: her terms could not be signed weaker than she wrote them, the
+=== assurance-check
+26 passed, 0 failed
+PASS: assurance tightened and never widened, standing was per tier,
+=== consequence-check
+22 passed, 0 failed
+=== first-party-check
+14 passed, 0 failed
+PASS: an agent she activated herself ran the same grant as anyone
+=== subagent-check
+22 passed, 0 failed
+PASS: sub-agents were admitted without a second first contact,
+=== demo-all-sim
+PASS: the requested acts completed
+=== establishment-check
+15 passed, 0 failed
+PASS: a resource server and an authority that were never
+=== multi-owner-check
+20 passed, 0 failed
+PASS: 2 owners of one resource server, each with her own
+=== org-check
+104 passed, 0 failed
+PASS: one resource server, three owners of record. Alice's accounts
+=== clearance-check
+20 passed, 0 failed
+=== rego-test
+rego: every shared pattern vector matches as the vectors say
+=== joint-check
+37 passed, 0 failed
+PASS: one resource, two owners, neither above the other. The terms
+=== xaa-check
+30 passed, 0 failed
+PASS: two protocols, one request. Northwind's provider said which
+=== smoke-test
+  uma-as: OK
+  uma_profiles_supported: OK
+  advertised formats: OK
+  no RReg: OK
+  jwks: OK
+  keycloak: OK
+  resource metadata (alice): OK
+  gateway challenge: OK
+  ext_authz body passthrough: OK
+  truncated body: OK
+  portal: OK
+  agent CIMD: OK
+  signatures directory: OK
+  alice operator CIMD: OK
+  person-server: OK
+  grafana: OK
+  loki events: OK (codex-release-java-uma-pep-1)
+  trace events: OK (codex-release-java-uma-pep-1)
+  DNS: OK
+  ID-JAG advertised: OK
+  resource metadata (carol): OK
+  carol portal: OK
+  XAA broker discovery: OK
+  Northwind workforce realm: OK
+=== adapter-check
+3 passed, 0 failed
+PASS: an unmodified MCP client reached Alice's resources, and her
+=== kwaai-check
+PASS: a personal AI answered for the owner on the full stack.
+=== paios-check
+PASS: the owner's signed fixture approval admitted its named test agent
+PASS: pAI-OS hosted the ability, and the ability decided for her.
+PASS: pAI-OS refused an unfamiliar agent despite tier1 standing consent
+PASS: pAI-OS refused an ask-me operation by the established agent
+PASS: the ability logged one standing authorization and all three refusals
+=== n8n-check
+PASS: n8n independently requires the sidecar's credential
+PASS: sidecar publishes its own resource and Alice's authority
+PASS: the signed introduction required an owner decision before enforcing her terms
+PASS: a signed call spent its grant through the sidecar and ran the pinned n8n workflow
+15 passed, 0 failed
+PASS: the unchanged upstream integration conformance probe passed
+PASS: withdrawal stopped the established sidecar from using that grant
+=== owner-cli-check
+PASS: the agent used the grant approved through the Java CLI
+PASS: the same grant stopped working after Java CLI revocation
+=== portal-check
+PASS: Alice signed in through the edge and used the organization and joint owner controls
+PASS: Carol used her own portal, session, and resource authority
+PASS: Carol's idle owner event feed stayed open for 30.0s
+PASS: Dana's separate administrative session reached the organization console

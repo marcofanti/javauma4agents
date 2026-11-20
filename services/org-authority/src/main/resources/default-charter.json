@@ -1,0 +1,59 @@
+{
+  "name": "Agent access policy",
+  "claims": [
+    "northwind-vault/*"
+  ],
+  "roles": {
+    "analyst": {
+      "name": "Analyst",
+      "grants": [
+        "northwind-vault/get_positions",
+        "northwind-vault/get_transactions"
+      ],
+      "delegation": "first-party-only"
+    },
+    "trader": {
+      "name": "Trader",
+      "grants": [
+        "northwind-vault/*"
+      ],
+      "delegation": "any-agent"
+    }
+  },
+  "default_role": "analyst",
+  "envelope": {
+    "max_expires_in": 3600,
+    "allowed_scopes": [
+      "positions:read",
+      "transactions:read",
+      "trades:execute"
+    ],
+    "require_clearance": {},
+    "require_prohibited": [
+      "model-training",
+      "sharing-outside-engagement-team",
+      "retention-after-engagement"
+    ],
+    "always_ask": [
+      "northwind-vault/execute_trade"
+    ]
+  },
+  "conditions": {
+    "min_binding": 1,
+    "min_provenance": 0,
+    "min_accountability": 2,
+    "require_reason": true,
+    "require_mission": false
+  },
+  "break_glass": {
+    "enabled": true,
+    "resources": [
+      "northwind-vault/get_positions",
+      "northwind-vault/get_transactions"
+    ],
+    "max_expires_in": 900,
+    "require_reason": true,
+    "invokers": []
+  },
+  "rego": ""
+}

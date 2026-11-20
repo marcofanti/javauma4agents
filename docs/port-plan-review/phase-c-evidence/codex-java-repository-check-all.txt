@@ -1,0 +1,71 @@
+make -j8 check-all with explicit disposable PostgreSQL 17.12 DSN (exit 0)
+[INFO] BUILD SUCCESS
+=== shim-test
+PASS: shim exposes the vault tools
+PASS: first contact connects, then tier 1 grants
+PASS: terms were rendered inside the agent
+PASS: tier 3 pends, Alice approves, trade executes
+PASS: standing-config fallback (no elicitation client)
+PASS: call completes after the owner decides
+PASS: the wait was handed back to Bob, not held open
+PASS: the pend names a principal Bob is not and cannot reach
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+11 passed, 0 failed
+PASS: a second implementation, sharing no code with the first, ran the four beats.
+=== decline-check
+4 passed, 0 failed
+=== demo-acts-a
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+=== demo-acts-b
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+PASS: the requested acts completed
+=== flow-check
+PASS: agent identity stayed on the requesting side.
+=== embedded-check
+PASS: a resource enforced its owner's UMA policy with no gateway
+=== smoke-alice
+=== fixture
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+=== rotation-check
+2 passed, 0 failed
+5 passed, 0 failed
+PASS: the authority rotated its key and nothing it had issued stopped working.
+Restoring the original signing key and the memory store
+=== store-test
+[INFO] Tests run: 80, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+PEP container and startup timestamp unchanged across rotation
+Restored AS readback: memory, only uma-as-1 published through TLS
+
+Fresh self-provisioned aggregate after credential/restore guard changes (exit 0)
+=== shim-test
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+11 passed, 0 failed
+=== decline-check
+4 passed, 0 failed
+=== demo-acts-a
+=== demo-acts-b
+=== flow-check
+=== embedded-check
+=== smoke-alice
+=== fixture
+=== rotation-check
+2 passed, 0 failed
+5 passed, 0 failed
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+=== store-test
+[INFO] Tests run: 85, Failures: 0, Errors: 0, Skipped: 0
+
+Live memory reset
+memory
+PASS: changed tier purpose is visible before reset
+Demo state rewound.
+PASS: restart-based reset returns the memory-backed tier to its seeded purpose

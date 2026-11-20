@@ -1,0 +1,26 @@
+[Excerpt from the original test run]
+docker compose --profile test run --rm ts-agent-check
+ Volume refstack_driver-keys Creating
+ Volume refstack_driver-keys Creating
+ Volume refstack_driver-keys Created
+ Volume refstack_driver-keys Created
+ Image node:20.15.0 Pulling
+ 41378474bb66 Pulling fs layer 0B
+ 222f8241ab9f Pulling fs layer 0B
+[191 lines omitted]
+== Beat 1: the challenge ==
+[3 lines omitted]
+== Beat 0: corroborate the authority ==
+[4 lines omitted]
+== Beats 2–4: terms, agreement, the owner, the grant ==
+[8 lines omitted]
+== The call, proof of possession ==
+[4 lines omitted]
+== Declining ==
+   presenting the ticket
+   terms proffered: Portfolio analysis for the current advisory engagement (expires 86400s)
+   ok   a decline ends the negotiation
+
+11 passed, 0 failed
+
+PASS: a second implementation, sharing no code with the first, ran the four beats.

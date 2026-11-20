@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /src/services/alice-portal/target/alice-portal.jar app.jar
-COPY services/alice-portal/static /app/static
+# The pinned upstream SPA, unchanged (make vendor-verify checks its blobs).
+COPY conformance/upstream/services/alice-portal/static /app/static
+COPY conformance/upstream/services/org-console/static /app/org-console-static
 ENV STATIC_DIR=/app/static
 EXPOSE 9010
 CMD ["java", "-jar", "app.jar"]

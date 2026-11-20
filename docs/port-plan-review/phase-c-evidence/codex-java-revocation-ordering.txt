@@ -1,0 +1,21 @@
+[ERROR] Tests run: 2, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 0.223 s <<< FAILURE! -- in io.uma4agents.authserver.CodexRevocationOrderingTest
+[ERROR]   CodexRevocationOrderingTest.aRevocationBeforeRecordingAnApprovedGrantRefusesTheGrant:23->assertRevocationWins:64 expected: <403> but was: <200>
+[ERROR]   CodexRevocationOrderingTest.aRevocationBeforeTheApprovedConnectionWriteStaysRevoked:18->assertRevocationWins:64 expected: <403> but was: <200>
+[ERROR] Tests run: 2, Failures: 2, Errors: 0, Skipped: 0
+
+After the guarded writes were wired
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.258 s -- in io.uma4agents.authserver.GrantLoopTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.018 s -- in io.uma4agents.authserver.CodexRevocationOrderingTest
+[INFO] Tests run: 29, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.335 s -- in io.uma4agents.authserver.store.MemoryStoreTest
+[INFO] Tests run: 50, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Repository store gate with ordered writes
+store-test against PostgreSQL 17.12
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in io.uma4agents.authserver.store.PgDsnTest
+[INFO] Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.536 s -- in io.uma4agents.authserver.store.JdbcStoreTest
+[INFO] Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.332 s -- in io.uma4agents.authserver.store.MemoryStoreTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.401 s -- in io.uma4agents.authserver.store.JdbcReplicaTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.089 s -- in io.uma4agents.authserver.store.SqlTransactionTest
+[INFO] Tests run: 92, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

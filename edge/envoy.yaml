@@ -25,8 +25,17 @@ static_resources:
                     - name: alice-as
                       domains: ["alice-as.uma.lab", "alice-as.uma.lab:*"]
                       routes:
+                        - match: { path: "/owner/events" }
+                          route: { cluster: uma_as, timeout: 0s }
                         - match: { prefix: "/" }
                           route: { cluster: uma_as }
+                    - name: carol-as
+                      domains: ["carol-as.uma.lab", "carol-as.uma.lab:*"]
+                      routes:
+                        - match: { path: "/owner/events" }
+                          route: { cluster: carol_as, timeout: 0s }
+                        - match: { prefix: "/" }
+                          route: { cluster: carol_as }
                     - name: keycloak
                       domains: ["keycloak.uma.lab", "keycloak.uma.lab:*"]
                       routes:
@@ -40,8 +49,47 @@ static_resources:
                     - name: portal
                       domains: ["portal.uma.lab", "portal.uma.lab:*"]
                       routes:
+                        - match: { path: "/api/agent/events" }
+                          route: { cluster: alice_portal, timeout: 0s }
                         - match: { prefix: "/" }
                           route: { cluster: alice_portal }
+                    - name: carol-portal
+                      domains: ["carol-portal.uma.lab", "carol-portal.uma.lab:*"]
+                      routes:
+                        - match: { path: "/api/agent/events" }
+                          route: { cluster: carol_portal, timeout: 0s }
+                        - match: { prefix: "/" }
+                          route: { cluster: carol_portal }
+                    - name: northwind-org
+                      domains: ["northwind-org.uma.lab", "northwind-org.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: northwind_org }
+                    - name: joint-tally
+                      domains: ["joint-tally.uma.lab", "joint-tally.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: joint_tally }
+                    - name: northwind-xaa
+                      domains: ["northwind-xaa.uma.lab", "northwind-xaa.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: xaa_broker }
+                    - name: n8n
+                      domains: ["n8n.uma.lab", "n8n.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: n8n_sidecar }
+                    - name: northwind-idp
+                      domains: ["northwind-idp.uma.lab", "northwind-idp.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: northwind_idp }
+                    - name: org-console
+                      domains: ["org-console.uma.lab", "org-console.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: org_console }
                     - name: grafana
                       domains: ["grafana.uma.lab", "grafana.uma.lab:*"]
                       routes:
@@ -52,6 +100,16 @@ static_resources:
                       routes:
                         - match: { prefix: "/" }
                           route: { cluster: person_server }
+                    - name: agent_operator
+                      domains: ["agent.uma.lab", "agent.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: agent_operator }
+                    - name: alice_operator
+                      domains: ["alice-agent.uma.lab", "alice-agent.uma.lab:*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: alice_operator }
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
@@ -74,6 +132,14 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address: { socket_address: { address: uma-as, port_value: 9000 } }
+    - name: carol_as
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: carol_as
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: carol-as, port_value: 9000 } }
     - name: keycloak
       type: STRICT_DNS
       load_assignment:
@@ -98,6 +164,62 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address: { socket_address: { address: alice-portal, port_value: 9010 } }
+    - name: carol_portal
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: carol_portal
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: carol-portal, port_value: 9010 } }
+    - name: northwind_org
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: northwind_org
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: org-authority, port_value: 9040 } }
+    - name: joint_tally
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: joint_tally
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: joint-tally, port_value: 9060 } }
+    - name: xaa_broker
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: xaa_broker
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: xaa-broker, port_value: 9080 } }
+    - name: n8n_sidecar
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: n8n_sidecar
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: n8n-sidecar, port_value: 9002 } }
+    - name: northwind_idp
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: northwind_idp
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: northwind-idp, port_value: 8081 } }
+    - name: org_console
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: org_console
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: org-console, port_value: 9050 } }
     - name: grafana
       type: STRICT_DNS
       load_assignment:
@@ -114,3 +236,21 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address: { socket_address: { address: person-server, port_value: 8765 } }
+
+    - name: agent_operator
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: agent_operator
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: agent-operator, port_value: 9030 } }
+
+    - name: alice_operator
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: alice_operator
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address: { socket_address: { address: alice-operator, port_value: 9030 } }

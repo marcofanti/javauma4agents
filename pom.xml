@@ -20,12 +20,18 @@
 
   <modules>
     <module>lib/uma4a-common</module>
+    <module>lib/uma4a-pep</module>
     <module>mcp/alice-vault</module>
     <module>services/alice-portal</module>
     <module>services/uma-as</module>
+    <module>services/org-authority</module>
+    <module>services/joint-tally</module>
+    <module>services/xaa-broker</module>
     <module>services/uma-pep</module>
+    <module>services/agent-operator</module>
     <module>lib/uma4a-agent</module>
     <module>clients/demo-driver</module>
+    <module>clients/owner-cli</module>
     <module>clients/agent-shim</module>
   </modules>
 
@@ -33,7 +39,7 @@
     <java.version>26</java.version>
     <maven.compiler.release>26</maven.compiler.release>
     <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
-    <mcp.version>2.0.0</mcp.version>
+    <mcp.version>2.2.0</mcp.version>
   </properties>
 
   <dependencyManagement>

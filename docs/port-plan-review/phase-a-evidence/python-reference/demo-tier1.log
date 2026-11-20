@@ -1,0 +1,32 @@
+ Container refstack-demo-driver-run-cda2ca08f74e Creating
+ Container refstack-demo-driver-run-cda2ca08f74e Created
+
+   running pseudonymously: the bare agent key is the identity
+   operator metadata: https://agent.uma.lab/agent.json
+   key published for discovery: https://agent.uma.lab/.well-known/http-message-signatures-directory
+
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+   resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp (signed: yes)
+   authorization server(s): https://alice-as.uma.lab
+   tool surface: get_positions (scopes positions:read)
+   tool surface: get_transactions (scopes transactions:read)
+   tool surface: execute_trade (scopes trades:execute)
+   note: which resources belong to whom is not in the public document — owner instances live behind the protected owner-resources endpoint
+   MCP session established through the gateway (discovery is open)
+
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+   (first contact: an unconnected agent pends until Alice connects it)
+   challenged: 401 from the gateway, ticket YWxpY2U~tkt_sgkuRx6d…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Suitability review for advisory onboarding (expires 172800s, prohibited: retention-after-review, marketing, model-training)
+   [bob-standing-config] terms accepted: purpose='Suitability review for advisory onboarding' expires_in=172800 prohibited=['retention-after-review', 'marketing', 'model-training']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] logged in at her IdP (direct-access grant)
+   [simulated-alice] approving connection request fam_fQQbYOxYiq8 from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier1/v2 · agreement s256:Yo51wP7K6joJ0Gq…
+   data received: {"as_of": "2026-07-06", "positions": [{"symbol": "VTI", "name": "Vanguard Total Stock Market ETF", "quantity": 812, "cost_basis": 178432.1, …
+
+PASS: the requested acts completed

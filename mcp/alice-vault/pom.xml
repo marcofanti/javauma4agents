@@ -13,12 +13,17 @@
 
   <artifactId>alice-vault</artifactId>
   <name>alice-vault-mcp</name>
-  <description>Alice's brokerage vault as an MCP server (fixture data, zero auth)</description>
+  <description>Alice's brokerage vault as an MCP server, gateway-fronted or self-enforcing</description>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.uma4agents</groupId>
+      <artifactId>uma4a-pep</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.modelcontextprotocol.sdk</groupId>

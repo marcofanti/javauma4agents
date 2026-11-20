@@ -1,0 +1,15 @@
+docker compose --profile test run --rm shim-spike
+uma4a launcher: exec java -jar /app/shim.jar
+[agent-shim] proxying https://gateway.uma.lab/mcp; keystore /tmp/spike-stdio.pem
+   stdio negotiated 2025-11-25; server alice-vault-via-uma; tools capability True
+PASS: stdio: the Python SDK's initialize is answered
+PASS: http: the shim is listening within the bound
+   http negotiated 2025-11-25
+PASS: http: the Python SDK's initialize is answered
+PASS: http: the three tools are listed
+PASS: http: a pend with nobody to ask is handed back, not held open
+PASS: http: exactly this run's pend is approved, nothing else
+PASS: http: calling again resumes the held request
+{"passed": 7, "failed": 0}
+make shim-spike exit=0
+after: 1 pending for fam_ikwS_zognRA

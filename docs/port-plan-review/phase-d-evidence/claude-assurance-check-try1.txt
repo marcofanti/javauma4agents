@@ -1,0 +1,67 @@
+docker compose --profile test run --rm assurance-check
+ Container claude-phase-d-assurance-check-run-10b1edb9c7cc Creating
+ Container claude-phase-d-assurance-check-run-10b1edb9c7cc Created
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+
+== First contact: both are strangers, so both ask ==
+   ok   the accountable agent was admitted, after asking
+   ok   the nameless agent was admitted too — assurance is not a gate
+
+== Second request, same tier: assurance decides who is quiet ==
+   ok   an agent with a named operator does not disturb her again
+   ok   an agent with nobody behind it asks every time
+   her rule reads `assurance.accountability_below:1` and names no agent
+
+== Standing is per tier, not per agent ==
+   ok   being admitted is not being admitted everywhere
+   ok   and the second request at that tier is quiet
+
+== Saying so, and having published the key ==
+   ok   the operator's key directory carries this agent's key
+   ok   the operator's own directory raised accountability to 2 — {'binding': 1, 'provenance': 0, 'accountability': 2}
+   bound to a key, recognisable next time
+   self-minted key — nothing to check it against
+   Sterling & Vance — Advisory Agent published this agent's signing key as its own
+   ok   and it is still admitted like any other stranger — assurance buys quiet, never access
+
+== A lie can only cost the liar friction ==
+   ok   metadata that does not resolve buys nothing
+   ok   and is still worth nothing on the second try
+   ok   a directory at another origin than the operator it claims attests nothing — {'binding': 1, 'provenance': 0, 'accountability': 1}
+
+== A rule may turn a stranger away; none may let one in ==
+   ok   she can write a rule that refuses nameless strangers — {"name":"Holdings summary","resources":["alice-vault/get_positions"],"ask_me":false,"rules":[{"when":["assurance.accountability_below:1"],"then":"ask"},{"when":
+   ok   a nameless stranger is turned away without reaching her — standing.none; assurance.accountability_below:1
+   ok   and her record says her rule did it
+   ok   and her rules are put back as she wrote them — {"name":"Holdings summary","resources":["alice-vault/get_positions"],"ask_me":false,"rules":[{"when":["assurance.accountability_below:1"],"then":"ask"}],"terms"
+
+== Her attention has a depth limit ==
+   ok   a flood of strangers is capped at 5 waiting for her — 5 waiting
+   ok   and the ones past the cap are refused with a reason, not queued — first refusal at stranger 5
+
+== And a newcomer that can be named still gets in ==
+   ok   a first contact she could name is not refused for budget — timed out waiting for the owner
+   ok   and it is waiting for her, in its own lane — accountability of what is waiting: [0, 0, 0, 0, 0, 2]
+
+== And the flood does not reach the agent she knows ==
+   ok   an established agent is unaffected by the queue being full
+
+== One action shuts out an operator, not one agent ==
+   ok   her authority lists the operator behind those agents — 2 active
+   ok   blocking it revokes every agent it runs, in one step — {'origin': 'https://agent.uma.lab', 'connections_revoked': 2, 'rpts_deactivated': 6}
+   ok   and an agent of that operator is refused by name — the owner does not accept agents from https://agent.uma.lab
+   ok   but the same party may return anonymously, as a stranger
+   ok   and the operator is let back in afterwards — {"origin":"https://agent.uma.lab","blocked":false}
+   unblocked — she may deal with them again, but what the block
+   revoked stays revoked: it restores the right to ask, not the access
+   queue left empty (1 of this check's requests dismissed)
+
+26 passed, 0 failed
+
+PASS: assurance tightened and never widened, standing was per tier,
+      a flood of anonymous strangers could crowd out neither the agent
+      she knows nor a newcomer she could put a name to, and one action
+      shut out an operator rather than one agent at a time.

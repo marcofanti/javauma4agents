@@ -1,0 +1,32 @@
+Full Maven verification with PostgreSQL required.
+[INFO] Tests run: 27, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 193, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Docker Compose health snapshot for the E2 topology.
+agent-operator Up 11 minutes (healthy)
+agentgateway Up 4 minutes
+alice-operator Up 11 minutes (healthy)
+alice-portal Up 10 minutes (healthy)
+alice-vault-mcp Up 4 minutes (healthy)
+carol-as Up 6 minutes (healthy)
+carol-portal Up 10 minutes (healthy)
+carol-vault-mcp Up 11 minutes (healthy)
+dns Up 11 minutes
+edge Up 11 minutes
+grafana Up 11 minutes
+keycloak Up 11 minutes (healthy)
+loki Up 11 minutes
+northwind-idp Up 11 minutes (healthy)
+northwind-vault-mcp Up 11 minutes (healthy)
+opa Up 11 minutes (healthy)
+org-authority Up 6 minutes (healthy)
+org-console Up 10 minutes (healthy)
+person-server Up 11 minutes (healthy)
+promtail Up 11 minutes
+uma-as Up 3 minutes (healthy)
+uma-pep Up 6 minutes (healthy)

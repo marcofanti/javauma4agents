@@ -1,0 +1,16 @@
+No host-published ports; default services: 25
+agent-operator, agentgateway, alice-operator, alice-portal, alice-vault-mcp, carol-as, carol-portal, carol-vault-mcp, dns, edge, grafana, joint-tally, joint-vault-mcp, keycloak, loki, northwind-idp, northwind-vault-mcp, opa, org-authority, org-console, person-server, promtail, uma-as, uma-pep, xaa-broker
+
+All 25 default services running; all defined health checks healthy.
+Post-start memory sample: 2.35 GiB total across 25 containers.
+
+establishment-check exit 0
+multi-owner-check exit 0
+
+establishment-check
+15 passed, 0 failed
+PASS: a resource server and an authority that were never
+
+multi-owner-check
+20 passed, 0 failed
+PASS: 2 owners of one resource server, each with her own

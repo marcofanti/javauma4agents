@@ -11,8 +11,10 @@ services:
     init: true
     image: docker.io/hickorydns/hickory-dns:0.25.2
     ports:
-      - "5053:53/tcp"
-      - "5053:53/udp"
+      # Host ports are overridable so a second stack (a Python control run, say) can
+      # run beside this one under its own Compose project.
+      - "${UMA4A_DNS_PORT:-5053}:53/tcp"
+      - "${UMA4A_DNS_PORT:-5053}:53/udp"
     volumes:
       - ./dns/named.toml:/etc/named.toml:ro
       - ./dns/uma.lab.zone:/var/named/uma.lab.zone:ro
@@ -22,7 +24,7 @@ services:
     image: envoyproxy/envoy:v1.34-latest
     command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "warn"]
     ports:
-      - "443:443"
+      - "${UMA4A_EDGE_PORT:-443}:443"
     volumes:
       - ./edge/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - ./certs/edge-server.pem:/certs/edge-server.pem:ro
@@ -31,11 +33,21 @@ services:
       default:
         aliases:
           - alice-as.uma.lab
+          - carol-as.uma.lab
+          - carol-portal.uma.lab
+          - northwind-org.uma.lab
+          - joint-tally.uma.lab
+          - northwind-xaa.uma.lab
+          - n8n.uma.lab
+          - northwind-idp.uma.lab
+          - org-console.uma.lab
           - keycloak.uma.lab
           - gateway.uma.lab
           - portal.uma.lab
           - grafana.uma.lab
           - ps.uma.lab
+          - agent.uma.lab
+          - alice-agent.uma.lab
 
   keycloak:
     init: true
@@ -57,31 +69,104 @@ services:
       retries: 30
       start_period: 30s
 
+  northwind-idp:
+    init: true
+    image: quay.io/keycloak/keycloak:26.4.5
+    command: start-dev --import-realm --health-enabled=true --http-port=8081
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${NORTHWIND_IDP_ADMIN_PASSWORD:-northwind-admin}
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: https://northwind-idp.uma.lab
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+    volumes:
+      - ./keycloak-northwind/:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && head -1 <&3 | grep -q 200"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+
   uma-as:
     init: true
     build:
       context: .
       dockerfile: services/uma-as/Dockerfile
     environment:
-      # pull: registration is declarative — the AS reads the RS's published
-      # metadata (public structure + protected owner instances) instead of
-      # receiving pushes. push: classic FedAuthz /rreg. Keep in step with
-      # uma-pep's REGISTRATION_MODE.
-      REGISTRATION_MODE: ${REGISTRATION_MODE:-pull}
+      # Registration is declarative: the AS reads the RS's published metadata
+      # (public structure + protected owner instances) and never takes pushes.
       UMA_AS_RS_RESOURCE_URI: https://gateway.uma.lab/mcp
       UMA_AS_ISSUER: https://alice-as.uma.lab
+      UMA_AS_ORG_ISSUER: https://northwind-org.uma.lab
+      UMA_AS_ORG_CALLBACK: https://alice-as.uma.lab
+      UMA_AS_ORG_TTL_S: ${UMA_AS_ORG_TTL_S:-30}
       # The resource-server client the AS issues PATs to (client_credentials,
       # scope uma_protection). Alice's day-0 consent for it is seeded.
       UMA_AS_RS_CLIENT_ID: meridian-gateway
       UMA_AS_RS_CLIENT_SECRET: ${UMA_AS_RS_CLIENT_SECRET:-gateway-dev-secret}
-      # The owner API takes Alice's OIDC token, validated against her realm.
+      # Two independent credentials for one person: her browser session (OIDC,
+      # through the portal) and a key her device holds (RFC 9421). Neither is a
+      # fallback for the other.
+      UMA_AS_OWNER_AUTH: oidc,local-key
       UMA_AS_OWNER_ISSUER: https://keycloak.uma.lab/realms/alice
+      UMA_AS_OWNER_KEY: /owner/owner-ed25519.pub
+      UMA_AS_OWNER_AUTHORITY: alice-as.uma.lab
       UMA_AS_OWNER: alice
+      # A signature proves a holder, not an owner, so the device key names whose it is.
+      UMA_AS_OWNER_KEY_OWNER: alice
       # Trust bundle for verifying issuers' TLS (AAuth dwk discovery and the
       # realm's JWKS both ride https; the lab CA signs *.uma.lab).
       UMA4A_CA_BUNDLE: /certs/rootCA.pem
+      # The agent providers whose tokens she believes. One: the person server
+      # her identified agents enrol with. Any other issuer is never fetched.
+      UMA_AS_AGENT_ISSUERS: https://ps.uma.lab
+      # The signing key and its kid, and the keys retired before it. Left at their
+      # defaults except by `make rotation-check`, which rotates and restores in one run.
+      UMA_AS_SIGNING_KEY: ${UMA_AS_SIGNING_KEY:-/keys/uma-as-ed25519.pem}
+      UMA_AS_KID: ${UMA_AS_KID:-uma-as-1}
+      UMA_AS_PREVIOUS_KEYS: ${UMA_AS_PREVIOUS_KEYS:-}
+      UMA_AS_PREVIOUS_KIDS: ${UMA_AS_PREVIOUS_KIDS:-}
+      # In memory by default, which is enough for one process and rewound by a restart
+      # (make reset). A check that recreates this container under live grants runs it on
+      # the `pg` service instead: a recreate empties a memory store.
+      UMA_AS_STORE: ${UMA_AS_STORE:-memory}
+      UMA_AS_DATABASE_URL: ${UMA_AS_DATABASE_URL:-}
     volumes:
       - uma-as-keys:/keys
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+      # Only the public half (make owner-key). Her private key never leaves her side.
+      - ./certs/owner-ed25519.pub:/owner/owner-ed25519.pub:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9000/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  carol-as:
+    init: true
+    build:
+      context: .
+      dockerfile: services/uma-as/Dockerfile
+    environment:
+      UMA_AS_OWNER: carol
+      UMA_AS_ISSUER: https://carol-as.uma.lab
+      UMA_AS_ORG_ISSUER: https://northwind-org.uma.lab
+      UMA_AS_ORG_CALLBACK: https://carol-as.uma.lab
+      UMA_AS_ORG_TTL_S: ${UMA_AS_ORG_TTL_S:-30}
+      UMA_AS_SEED_RS: "0"
+      UMA_AS_OWNER_AUTH: oidc
+      UMA_AS_OWNER_ISSUER: https://keycloak.uma.lab/realms/carol
+      UMA_AS_OWNER_AUTHORITY: carol-as.uma.lab
+      UMA_AS_AGENT_ISSUERS: https://ps.uma.lab
+      UMA_AS_PEND_BUDGET: ${UMA_AS_PEND_BUDGET:-5}
+      UMA_AS_PEND_BUDGET_ATTRIBUTED: ${UMA_AS_PEND_BUDGET_ATTRIBUTED:-40}
+      UMA_AS_STORE: ${UMA_AS_STORE:-memory}
+      UMA_AS_DATABASE_URL: ${UMA_AS_DATABASE_URL:-}
+      UMA4A_CA_BUNDLE: /certs/rootCA.pem
+    volumes:
+      - carol-as-keys:/keys
       - ./certs/rootCA.pem:/certs/rootCA.pem:ro
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:9000/health"]
@@ -99,10 +184,28 @@ services:
       UMA_AS_INTERNAL: http://uma-as:9000
       UMA_AS_RS_CLIENT_ID: meridian-gateway
       UMA_AS_RS_CLIENT_SECRET: ${UMA_AS_RS_CLIENT_SECRET:-gateway-dev-secret}
+      UMA_PEP_RS_SECRETS: >-
+        {"alice": "${UMA_AS_RS_CLIENT_SECRET:-gateway-dev-secret}"}
+      UMA_EXTRA_OWNERS: carol
+      UMA_OWNER_AUTHORITIES: >-
+        {"carol": {"public": "https://carol-as.uma.lab",
+                   "internal": "http://carol-as:9000"}}
       UMA_REALM: alice-vault
-      REGISTRATION_MODE: ${REGISTRATION_MODE:-pull}
+      UMA_PEP_ORG_ISSUER: https://northwind-org.uma.lab
+      UMA_PEP_ORG_INTERNAL: http://org-authority:9040
+      UMA_PEP_MEMBERSHIP_TTL_S: ${UMA_PEP_MEMBERSHIP_TTL_S:-10}
+      UMA_PEP_ORG_DISCOVERY_TTL_S: ${UMA_PEP_ORG_DISCOVERY_TTL_S:-15}
+      UMA_PEP_ORG_TOKEN: ${ORG_RS_TOKEN:-org-rs-dev-token}
+      UMA_PEP_SHARED_NAMESPACE: northwind-vault
+      UMA_PEP_JOINT_TALLY: https://joint-tally.uma.lab
+      UMA_PEP_JOINT_TALLY_INTERNAL: http://joint-tally:9060
+      UMA_PEP_JOINT_SECRET: ${TALLY_RS_SECRET:-tally-rs-dev-secret}
+      UMA_PEP_JOINT_ACCOUNTS: meridian-joint,meridian-either
+      UMA4A_CA_BUNDLE: /certs/rootCA.pem
+      UMA_EXPECTED_AUTHORITY: gateway.uma.lab
     volumes:
       - uma-pep-keys:/keys
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
     depends_on:
       uma-as:
         condition: service_healthy
@@ -113,7 +216,7 @@ services:
       retries: 10
 
   agentgateway:
-    image: ghcr.io/agentgateway/agentgateway:v1.3.1
+    image: ghcr.io/agentgateway/agentgateway:v1.4.0
     command: ["-f", "/etc/agentgateway/config.yaml"]
     volumes:
       - ./gateway/agw.yaml:/etc/agentgateway/config.yaml:ro
@@ -126,6 +229,69 @@ services:
     build:
       context: .
       dockerfile: mcp/alice-vault/Dockerfile
+    environment:
+      # gateway (default): the ext_authz service ahead of this server carries
+      # the enforcement obligations. embedded: the same enforcement core runs
+      # in this process, ahead of the MCP transport, and publishes for itself.
+      ENFORCEMENT_MODE: ${ENFORCEMENT_MODE:-gateway}
+      UMA_AS_PUBLIC: https://alice-as.uma.lab
+      UMA_AS_INTERNAL: http://uma-as:9000
+      UMA_AS_RS_CLIENT_ID: meridian-gateway
+      UMA_AS_RS_CLIENT_SECRET: ${UMA_AS_RS_CLIENT_SECRET:-gateway-dev-secret}
+      UMA_REALM: alice-vault
+      UMA_EXPECTED_AUTHORITY: gateway.uma.lab
+      # The origin's signing key, shared read-only with the gateway process:
+      # it identifies gateway.uma.lab in both enforcement modes.
+      UMA_PEP_SIGNING_KEY: /keys/uma-pep-ed25519.pem
+    volumes:
+      - uma-pep-keys:/keys:ro
+    depends_on:
+      uma-pep:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9020/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  carol-vault-mcp:
+    init: true
+    build:
+      context: .
+      dockerfile: mcp/alice-vault/Dockerfile
+    environment:
+      UMA_VAULT_OWNER: carol
+      UMA_VAULT_FIXTURES: /app/fixtures-carol.json
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9020/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  northwind-vault-mcp:
+    init: true
+    build:
+      context: .
+      dockerfile: mcp/alice-vault/Dockerfile
+    environment:
+      UMA_VAULT_OWNER: northwind
+      UMA_VAULT_FIXTURES: /app/fixtures-northwind.json
+      ENFORCEMENT_MODE: gateway
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9020/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  joint-vault-mcp:
+    init: true
+    build:
+      context: .
+      dockerfile: mcp/alice-vault/Dockerfile
+    environment:
+      UMA_VAULT_OWNER: joint
+      UMA_VAULT_FIXTURES: /app/fixtures-joint.json
+      ENFORCEMENT_MODE: gateway
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:9020/health"]
       interval: 3s
@@ -141,7 +307,7 @@ services:
       UMA_AS_INTERNAL: http://uma-as:9000
       PORTAL_AUTH: ${PORTAL_AUTH:-oidc}
       OIDC_ISSUER: https://keycloak.uma.lab/realms/alice
-      OIDC_CLIENT_ID: alice-portal
+      OIDC_CLIENT_ID: meridian-portal
       PORTAL_SESSION_SECRET: ${PORTAL_SESSION_SECRET:-dev-session-secret}
       VAULT_MCP_URL: http://alice-vault-mcp:9020/mcp
       SSL_CERT_FILE: /certs/rootCA.pem
@@ -152,6 +318,202 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:9010/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  carol-portal:
+    init: true
+    build:
+      context: .
+      dockerfile: services/alice-portal/Dockerfile
+    environment:
+      UMA_AS_INTERNAL: http://carol-as:9000
+      PORTAL_AUTH: ${PORTAL_AUTH:-oidc}
+      OIDC_ISSUER: https://keycloak.uma.lab/realms/carol
+      UMA_PORTAL_OWNER: carol
+      PORTAL_PUBLIC_URL: https://carol-portal.uma.lab
+      OIDC_CLIENT_ID: meridian-portal
+      PORTAL_SESSION_SECRET: ${PORTAL_SESSION_SECRET:-dev-session-secret}
+      VAULT_MCP_URL: http://carol-vault-mcp:9020/mcp
+      SSL_CERT_FILE: /certs/rootCA.pem
+    volumes:
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9010/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  opa:
+    init: true
+    image: openpolicyagent/opa:1.4.2
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=error"]
+    healthcheck:
+      test: ["CMD", "/opa", "version"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  joint-tally:
+    init: true
+    build:
+      context: .
+      dockerfile: services/joint-tally/Dockerfile
+    environment:
+      TALLY_ISSUER: https://joint-tally.uma.lab
+      TALLY_AUDIENCE: https://gateway.uma.lab
+      TALLY_RS_SECRET: ${TALLY_RS_SECRET:-tally-rs-dev-secret}
+      UMA4A_CA_BUNDLE: /certs/rootCA.pem
+      # A minimum the holders may not vote themselves below. Zero here so the
+      # lab can carry both an every-holder account and an either-holder one;
+      # set it and the second is refused at startup, by name. The floor is
+      # what an account agreement or a regulator supplies in the world, and
+      # it is the only answer to what quorum sets the quorum.
+      TALLY_THRESHOLD_FLOOR: ${TALLY_THRESHOLD_FLOOR:-0}
+      TALLY_SIGNING_KEY: /keys/tally-ed25519.pem
+      TALLY_MANDATES: '{"meridian-joint":{"resources":["meridian-joint/get_positions","meridian-joint/get_transactions","meridian-joint/execute_trade"],"holders":[{"owner":"alice","issuer":"https://alice-as.uma.lab"},{"owner":"carol","issuer":"https://carol-as.uma.lab"}],"rule":{"kind":"all"}},"meridian-either":{"resources":["meridian-either/get_positions","meridian-either/get_transactions","meridian-either/execute_trade"],"holders":[{"owner":"alice","issuer":"https://alice-as.uma.lab"},{"owner":"carol","issuer":"https://carol-as.uma.lab"}],"rule":{"kind":"any"}}}'
+    volumes:
+      - tally-keys:/keys
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+    depends_on:
+      uma-as:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9060/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  org-authority:
+    init: true
+    build:
+      context: .
+      dockerfile: services/org-authority/Dockerfile
+    environment:
+      ORG_ISSUER: https://northwind-org.uma.lab
+      ORG_ID: northwind
+      ORG_NAME: Northwind Capital
+      ORG_ADMIN_ISSUER: https://keycloak.uma.lab/realms/northwind
+      ORG_ADMIN_CLIENTS: meridian-org-console
+      OPA_URL: http://opa:8181
+      ORG_RS_TOKEN: ${ORG_RS_TOKEN:-org-rs-dev-token}
+      ORG_JOIN_CODE: ${ORG_JOIN_CODE:-NW-7K2F-QX}
+      UMA4A_CA_BUNDLE: /certs/rootCA.pem
+    volumes:
+      - org-keys:/keys
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+    depends_on:
+      opa:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9040/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+
+  xaa-broker:
+    init: true
+    build:
+      context: .
+      dockerfile: services/xaa-broker/Dockerfile
+    environment:
+      XAA_ISSUER: https://northwind-xaa.uma.lab
+      # Northwind's own directory. Meridian's Keycloak is a different
+      # party and its word about who Northwind employs is worth nothing.
+      XAA_IDP_ISSUER: https://northwind-idp.uma.lab/realms/employees
+      XAA_ADMINS: dana
+      XAA_IDP_ADMIN_CLIENT: northwind-idp-admin
+      XAA_CLIENTS: '{"northwind-research-agent": "${XAA_AGENT_SECRET:-northwind-agent-secret}"}'
+      # The edges Dana approved. Two, because Northwind's book is administered
+      # by two members and each runs her own authority — the assertion has to
+      # be audienced at whichever one holds the resource.
+      XAA_SEED_CONNECTIONS: >-
+        [{"id": "nw-alice", "requesting_client": "northwind-research-agent",
+          "audience": "https://alice-as.uma.lab",
+          "resource": "https://gateway.uma.lab/mcp",
+          "scopes": ["get_positions", "get_balance"]},
+         {"id": "nw-carol", "requesting_client": "northwind-research-agent",
+          "audience": "https://carol-as.uma.lab",
+          "resource": "https://gateway.uma.lab/mcp",
+          "scopes": ["get_positions", "get_balance"]}]
+      UMA4A_CA_BUNDLE: /certs/rootCA.pem
+    volumes:
+      - xaa-keys:/keys
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+    depends_on:
+      northwind-idp:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9080/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  org-console:
+    init: true
+    build:
+      context: .
+      dockerfile: services/alice-portal/Dockerfile
+    environment:
+      UMA_PORTAL_MODE: org-console
+      STATIC_DIR: /app/org-console-static
+      SERVER_PORT: "9050"
+      ORG_AUTHORITY_INTERNAL: http://org-authority:9040
+      CONSOLE_AUTH: ${CONSOLE_AUTH:-oidc}
+      OIDC_ISSUER: https://keycloak.uma.lab/realms/northwind
+      OIDC_CLIENT_ID: meridian-org-console
+      CONSOLE_PUBLIC_URL: https://org-console.uma.lab
+      CONSOLE_SESSION_SECRET: ${PORTAL_SESSION_SECRET:-dev-session-secret}
+      SSL_CERT_FILE: /certs/rootCA.pem
+    volumes:
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      org-authority:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9050/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  # The firm that operates Bob's agent: its CIMD document and Web Bot Auth key
+  # directory at https://agent.uma.lab.
+  agent-operator:
+    init: true
+    build:
+      context: .
+      dockerfile: services/agent-operator/Dockerfile
+    environment:
+      AGENT_OPERATOR_ORIGIN: https://agent.uma.lab
+      # Only the operator's own agents put keys in its directory.
+      AGENT_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9030/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  # Alice's own web presence: the same operator service, a second instance with her
+  # origin. An operator directory is a party's own infrastructure, and the service holds
+  # no authoritative state, so running another is correct rather than a duplication.
+  alice-operator:
+    init: true
+    build:
+      context: .
+      dockerfile: services/agent-operator/Dockerfile
+    environment:
+      AGENT_OPERATOR_ORIGIN: https://alice-agent.uma.lab
+      AGENT_OPERATOR_NAME: Alice's own agent
+      AGENT_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9030/health"]
       interval: 3s
       timeout: 5s
       retries: 10
@@ -210,8 +572,33 @@ services:
     depends_on:
       - loki
 
-  # Headless walker for the demo acts (same grant code path as the agent-shim).
+  # The pinned upstream demo driver, unchanged, as an independent client.
+  # Python client dependencies are pinned exactly (upstream floats them).
   demo-driver:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' 'aauth==0.3.2' 'aauth-signing==0.1.3' && exec python /driver/driver.py --cacert /driver/rootCA.pem "$$@"
+      - --
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+      PS_ADMIN_TOKEN: ${PS_ADMIN_TOKEN:-uma4agents-ps-admin}
+      UMA4A_ALICE_OPERATOR: https://alice-agent.uma.lab
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/driver.py:/driver/driver.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      # Bob's agent's long-term (stable) key survives runs, so Alice's
+      # connection to it stays standing.
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["demo"]
+
+  # The Java client library's own example walker. Not a compatibility gate.
+  java-demo-driver:
     build:
       context: .
       dockerfile: clients/demo-driver/Dockerfile
@@ -219,27 +606,610 @@ services:
       PS_ADMIN_TOKEN: ${PS_ADMIN_TOKEN:-uma4agents-ps-admin}
     volumes:
       - ./certs/rootCA.pem:/driver/rootCA.pem:ro
-      # Bob's agent's long-term (stable) key survives runs, so the agent
-      # server recognizes the agent and Alice's connection stays standing.
+      - java-driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["example"]
+
+  # Four agents, four identity regimes, one unchanged owner: the pinned
+  # flow_check.py, unchanged. Verifies that nothing about who the agent is
+  # reaches Alice's authorization decision.
+  flow-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' 'aauth==0.3.2' 'aauth-signing==0.1.3' && exec python /driver/flow_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+      PS_ADMIN_TOKEN: ${PS_ADMIN_TOKEN:-uma4agents-ps-admin}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/flow_check.py:/driver/flow_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
       - driver-keys:/driver/keys
     working_dir: /driver
-    profiles: ["demo"]
+    profiles: ["test"]
+
+  # Phase D: her terms cannot be signed weaker, the agent's reason and mandate are carried
+  # and never judged, and drift is read from her own record. The pinned check, unchanged.
+  intent-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/intent_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+      UMA_AS_MAX_REASON: ${UMA_AS_MAX_REASON:-512}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/intent_check.py:/driver/intent_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  # Phase D: assurance tightens and never widens, standing is per tier, the attention
+  # lanes, and one action blocking an operator. The pinned check, unchanged.
+  assurance-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/assurance_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+      UMA_AS_PEND_BUDGET: ${UMA_AS_PEND_BUDGET:-5}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/assurance_check.py:/driver/assurance_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  # Phase D: what an operation leaves behind, declared by the resource, read by her policy.
+  consequence-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/consequence_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/consequence_check.py:/driver/consequence_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  # Phase D: an agent she activated herself meets less friction, never more access.
+  first-party-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/first_party_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+      UMA4A_ALICE_OPERATOR: https://alice-agent.uma.lab
+      UMA4A_AGENT_OPERATOR: https://agent.uma.lab
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/first_party_check.py:/driver/first_party_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  # Phase D: sub-agents admitted on an introduction, under a ceiling, revoked with the parent.
+  subagent-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/subagent_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+      UMA4A_ALICE_OPERATOR: https://alice-agent.uma.lab
+      UMA4A_AGENT_OPERATOR: https://agent.uma.lab
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/subagent_check.py:/driver/subagent_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  establishment-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/establishment_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/establishment_check.py:/driver/establishment_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  multi-owner-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/multi_owner_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/multi_owner_check.py:/driver/multi_owner_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  org-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/org_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+      ORG_JOIN_CODE: ${ORG_JOIN_CODE:-NW-7K2F-QX}
+      UMA_PEP_MEMBERSHIP_TTL_S: ${UMA_PEP_MEMBERSHIP_TTL_S:-10}
+      UMA_AS_ORG_TTL_S: ${UMA_AS_ORG_TTL_S:-30}
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/org_check.py:/driver/org_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  clearance-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/clearance_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+      ORG_JOIN_CODE: ${ORG_JOIN_CODE:-NW-7K2F-QX}
+      UMA_PEP_MEMBERSHIP_TTL_S: ${UMA_PEP_MEMBERSHIP_TTL_S:-10}
+      UMA_AS_ORG_TTL_S: ${UMA_AS_ORG_TTL_S:-30}
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/clearance_check.py:/driver/clearance_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  joint-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/joint_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+      UMA4A_TALLY: https://joint-tally.uma.lab
+      ORG_JOIN_CODE: ${ORG_JOIN_CODE:-NW-7K2F-QX}
+      UMA_PEP_MEMBERSHIP_TTL_S: ${UMA_PEP_MEMBERSHIP_TTL_S:-10}
+      UMA_AS_ORG_TTL_S: ${UMA_AS_ORG_TTL_S:-30}
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/joint_check.py:/driver/joint_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  xaa-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/xaa_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+      XAA_AGENT_SECRET: ${XAA_AGENT_SECRET:-northwind-agent-secret}
+      UMA_PEP_ORG_DISCOVERY_TTL_S: ${UMA_PEP_ORG_DISCOVERY_TTL_S:-15}
+      ORG_JOIN_CODE: ${ORG_JOIN_CODE:-NW-7K2F-QX}
+      UMA_PEP_MEMBERSHIP_TTL_S: ${UMA_PEP_MEMBERSHIP_TTL_S:-10}
+      UMA_AS_ORG_TTL_S: ${UMA_AS_ORG_TTL_S:-30}
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/xaa_check.py:/driver/xaa_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  # The four-beat grant against a resource that protects itself
+  # (ENFORCEMENT_MODE=embedded): the pinned upstream check, unchanged.
+  embedded-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/embedded_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/embedded_check.py:/driver/embedded_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  # A second requesting agent, in TypeScript, sharing no code with the Python
+  # one: the pinned upstream client, built and run unchanged.
+  ts-agent-check:
+    image: node:20.15.0
+    entrypoint:
+      - /bin/bash
+      - -c
+      - rm -rf /work && cp -r /agent /work && cd /work && npm ci --no-audit --no-fund >/dev/null && npm run build >/dev/null && npm run check
+    environment:
+      NODE_EXTRA_CA_CERTS: /driver/rootCA.pem
+      UMA4A_CA_BUNDLE: /driver/rootCA.pem
+      UMA4A_KEYS: /driver/keys
+    volumes:
+      - ./conformance/upstream/clients/ts-agent:/agent:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    profiles: ["test"]
+
+  # Supplemental decline assertion (port plan CX-5), ours and outside the vendored
+  # tree: drives the decline the TypeScript check only reaches conditionally.
+  decline-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /checks/decline_check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+      UMA4A_CA_BUNDLE: /driver/rootCA.pem
+    volumes:
+      - ./conformance/supplemental/decline_check.py:/checks/decline_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+    profiles: ["test"]
+
+  # The agent-shim over stateless streamable HTTP, as the pinned adapter profile runs
+  # it: for MCP clients with no U4A code of their own, inside the lab network.
+  agent-shim:
+    init: true
+    build:
+      context: .
+      dockerfile: clients/agent-shim/Dockerfile
+    entrypoint: ["java", "-jar", "/app/shim.jar"]
+    environment:
+      UMA4A_SHIM_TRANSPORT: streamable-http
+      UMA4A_SHIM_HOST: 0.0.0.0
+      UMA4A_SHIM_PORT: "9030"
+      UMA4A_GATEWAY: https://gateway.uma.lab/mcp
+      UMA4A_CACERT: /certs/rootCA.pem
+      UMA4A_KEYSTORE: /keys/agent-key.pem
+      # No interactive client above it, so Alice's terms are decided by Bob's
+      # standing configuration — bounded, and set by a person in advance.
+      UMA4A_STANDING_MAX_EXPIRES: "604800"
+      UMA4A_PUBLISH_TO: ${UMA4A_ADAPTER_OPERATOR:-https://agent.uma.lab}
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+    volumes:
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+      - driver-keys:/keys
+    profiles: ["adapter"]
+
+  adapter-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - pip install -q 'mcp==2.3.0' 'httpx==0.28.1' && exec python /driver/adapter_check.py
+    environment:
+      UMA4A_SHIM_URL: http://agent-shim:9030/mcp
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/adapter_check.py:/driver/adapter_check.py:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+    profiles: ["adapter"]
 
   # Headless verification of the agent-shim under a scripted MCP client.
   shim-test:
     build:
       context: .
       dockerfile: clients/agent-shim/Dockerfile
-    entrypoint: ["python3", "/repo/clients/agent-shim/test_shim.py"]
+    # The pinned upstream check, unchanged. UMA4A_REPO points at a runtime tree
+    # whose clients/agent-shim/shim.py execs the Java shim jar.
+    entrypoint: ["python3", "/checks/test_shim.py"]
     environment:
       PYTHONUNBUFFERED: "1"
-      SHIM_CMD: java -jar /app/shim.jar
+      # The check limits its simulated approvals to its own keys only when it can
+      # import the vendored client library; without it, it approves whatever is first
+      # in Alice's queue.
+      PYTHONPATH: /runtime/lib
+      UMA4A_REPO: /runtime
+      UMA4A_JAVA_SHIM_JAR: /app/shim.jar
     volumes:
-      - ./:/repo:ro
+      - ./conformance/upstream/clients/agent-shim/test_shim.py:/checks/test_shim.py:ro
+      - ./conformance/runtime/clients/agent-shim/shim.py:/runtime/clients/agent-shim/shim.py:ro
+      - ./conformance/upstream/lib:/runtime/lib:ro
+      - ./certs/rootCA.pem:/runtime/certs/rootCA.pem:ro
+    profiles: ["test"]
+
+  # Phase A spike evidence: the Python SDK handshake against the Java shim on stdio
+  # and stateless HTTP, and a pend handed back and resumed (conformance/supplemental).
+  # A database for the checks that need the authorization server to survive a
+  # recreate, as upstream's: Postgres 17, the pinned DDL applied by uma-as itself.
+  # Not part of the default stack, and it publishes no host port.
+  pg:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: u4a
+      POSTGRES_PASSWORD: u4a
+      POSTGRES_DB: u4a
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U u4a -q"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    profiles: ["test"]
+
+  # Writes the rotated signing key into uma-as's key volume. Upstream does this inside
+  # the uma-as container with its Python; the Java image has none, so a helper does it
+  # (completion rule 1). Like upstream's, it replaces a key left by an earlier run.
+  rotation-keygen:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        pip install -q 'cryptography==50.0.2' && exec python - "$$@" <<'PY'
+        import os, sys
+        from cryptography.hazmat.primitives import serialization as s
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        path = sys.argv[1]
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(Ed25519PrivateKey.generate().private_bytes(
+                s.Encoding.PEM, s.PrivateFormat.PKCS8, s.NoEncryption()))
+        print(f"wrote {path}")
+        PY
+      - --
+    volumes:
+      - uma-as-keys:/keys
+    profiles: ["test"]
+
+  # Signing-key rotation under live grants: the pinned rotation_check.py, unchanged,
+  # in two phases around the recreate of uma-as that `make rotation-check` performs.
+  rotation-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /driver/rotation_check.py "$$@"
+      - --
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/clients/demo-driver/rotation_check.py:/driver/rotation_check.py:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  shim-spike:
+    build:
+      context: .
+      dockerfile: clients/agent-shim/Dockerfile
+    entrypoint: ["python3", "/checks/shim_spike.py"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /runtime/lib
+      UMA4A_REPO: /runtime
+      UMA4A_JAVA_SHIM_JAR: /app/shim.jar
+    volumes:
+      - ./conformance/supplemental/shim_spike.py:/checks/shim_spike.py:ro
+      - ./conformance/runtime/clients/agent-shim/shim.py:/runtime/clients/agent-shim/shim.py:ro
+      - ./conformance/upstream/lib:/runtime/lib:ro
+      - ./certs/rootCA.pem:/runtime/certs/rootCA.pem:ro
+    profiles: ["test"]
+
+  paios:
+    init: true
+    build:
+      context: .
+      dockerfile: kwaai/Dockerfile
+    environment:
+      PAIOS_HOST: 0.0.0.0
+      U4A_AUTHORITY_URL: https://alice-as.uma.lab
+      U4A_AUTHORITY_NAME: alice-as.uma.lab
+      U4A_OWNER_KEY: /owner/owner-ed25519.pem
+      U4A_CA_BUNDLE: /certs/rootCA.pem
+      # Her standing consent, set by her. Without it the ability denies
+      # everything, because pAI-OS gives it no way to ask her.
+      U4A_AUTO_TIERS: ${PAIOS_AUTO_TIERS:-tier1}
+      SSL_CERT_FILE: /certs/rootCA.pem
+    volumes:
+      # Her private key. Only this container and she have it; her
+      # authorization server holds the public half.
+      - ./certs/owner-ed25519.pem:/owner/owner-ed25519.pem:ro
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+      - paios-data:/opt/paios/data
+      - paios-check-keys:/driver/keys
+    depends_on:
+      uma-as:
+        condition: service_healthy
+    profiles: ["kwaai"]
+
+  # The personal-AI binding against the full stack: her authority, her portal,
+  # the gateway and the vault all as they really are — and a personal AI
+  # holding her key instead of a browser session.
+  kwaai-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2' && exec python /kwaai/check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      UMA4A_OPERATOR_REGISTER_TOKEN: ${OPERATOR_REGISTER_TOKEN:-uma4agents-operator-register}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/upstream/kwaai:/kwaai:ro
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - ./certs/owner-ed25519.pem:/owner/owner-ed25519.pem:ro
+      - driver-keys:/driver/keys
+    working_dir: /driver
+    profiles: ["test"]
+
+  n8n:
+    image: n8nio/n8n:2.38.6@sha256:7406a977895d0158ab0f5b2a3dc66de636711f36c06f0e2e2b1c391fc91f8ec3
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        n8n import:credentials --input=/fixtures/e2e-credentials.json
+        n8n import:workflow --input=/fixtures/e2e-workflow.json
+        n8n publish:workflow --id=u4aMcpStarter001
+        exec n8n start
+    environment:
+      N8N_ENCRYPTION_KEY: testkeytestkeytestkey123
+      N8N_USER_FOLDER: /tmp/n8nhome
+      N8N_PORT: "5678"
+      N8N_LISTEN_ADDRESS: 0.0.0.0
+      N8N_SECURE_COOKIE: "false"
+      N8N_RUNNERS_ENABLED: "true"
+    volumes:
+      - ./conformance/upstream/integrations/n8n/lab:/fixtures:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 25
+    profiles: ["n8n-lab"]
+
+  n8n-sidecar:
+    init: true
+    build:
+      context: .
+      dockerfile: services/uma-pep/Dockerfile
+    environment:
+      UMA_PEP_UPSTREAM: http://n8n:5678/mcp/u4a-protected
+      UMA_PEP_UPSTREAM_HEADER: X-Sidecar-Auth
+      UMA_PEP_UPSTREAM_AUTH: only-the-sidecar-knows
+      UMA_PEP_TOOLS: /config/tools.json
+      UMA_AS_PUBLIC: https://alice-as.uma.lab
+      UMA_AS_INTERNAL: https://alice-as.uma.lab
+      UMA_AS_RS_CLIENT_SECRET: ""
+      UMA_OWNER: alice
+      UMA_REALM: alice-vault
+      UMA_EXPECTED_AUTHORITY: n8n.uma.lab
+      UMA_PEP_RS_NAME: n8n workflow (Compose lab)
+      UMA4A_CA_BUNDLE: /certs/rootCA.pem
+    volumes:
+      - ./integrations/n8n/lab/tools.json:/config/tools.json:ro
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro
+      - sidecar-keys:/keys
+    depends_on:
+      n8n:
+        condition: service_healthy
+      uma-as:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9002/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+    profiles: ["n8n-lab"]
+
+  n8n-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - |
+        pip install -q 'httpx==0.28.1' 'pyjwt[crypto]==2.15.1' 'cryptography==50.0.2'
+        exec python /driver/n8n-check.py
+    environment:
+      PYTHONPATH: /driver/lib
+      PYTHONUNBUFFERED: "1"
+      SSL_CERT_FILE: /driver/rootCA.pem
+    working_dir: /driver
+    volumes:
+      - ./conformance/upstream/lib:/driver/lib:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
+      - ./certs/owner-ed25519.pem:/owner/owner-ed25519.pem:ro
+      - ./conformance/supplemental/n8n-check.py:/driver/n8n-check.py:ro
+      - ./conformance/upstream/integrations/conformance.py:/driver/upstream-conformance.py:ro
+    profiles: ["n8n-lab"]
+
+  portal-check:
+    image: python:3.12.12-slim
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - pip install -q 'httpx==0.28.1' && exec python /driver/portal-check.py
+    environment:
+      ORG_JOIN_CODE: ${ORG_JOIN_CODE:-NW-7K2F-QX}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./conformance/supplemental/portal-check.py:/driver/portal-check.py:ro
+      - ./conformance/upstream/services/alice-portal/static:/assets/owner:ro
+      - ./conformance/upstream/services/org-console/static:/assets/console:ro
+      - ./certs/rootCA.pem:/driver/rootCA.pem:ro
     profiles: ["test"]
 
 volumes:
   uma-as-keys:
+  carol-as-keys:
+  org-keys:
+  tally-keys:
+  xaa-keys:
+  sidecar-keys:
+  paios-data:
+  paios-check-keys:
   uma-pep-keys:
   ps-data:
   driver-keys:
+  java-driver-keys:

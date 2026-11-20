@@ -1,0 +1,42 @@
+Independent Phase B pinned Python controls
+Source pin: 77649287dc883b75ef563c59f96de8613ecf10d0
+Person-server source pin: 4e05247134640433b4fb0736e548cc2b1c21a267
+Selected assertions from successful runs. Response payloads and private data omitted.
+
+Unchanged pinned standalone fixture
+   signed request accepted — 3 tiers, no identity provider involved
+   an unsigned request to the same endpoint: 401
+   owner request signed by a key she did not enrol: 401
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+
+Pinned AAuth verifier assertions
+43 passed, 0 failed
+
+Unchanged pinned flow after constraining person-server build to aauth-signing 0.1.2
+== Alice's side, before anyone asks for anything ==
+== pseudonymous: a bare key, no issuer ==
+== identified: AAuth token, rotating session key ==
+   its agent token is EdDSA-signed, from an implementation that is not this lab's
+== described: CIMD operator document ==
+== published: Web Bot Auth directory ==
+== What Alice's side did, across all four ==
+   terms: identical in all four
+   grant: identical in all four
+   as_uri: identical in all four
+   her policy: unchanged
+== The one thing that moved ==
+== Bob withdraws an agent at his person server ==
+   a revoked agent gets no fresh token; asking again waits for Bob
+PASS: agent identity stayed on the requesting side.
+
+Identified demo act tier1
+PASS: the requested acts completed
+
+Identified demo act tier2
+PASS: the requested acts completed
+
+Identified demo act tier3
+PASS: the requested acts completed
+
+Identified demo act revocation
+PASS: the requested acts completed

@@ -1,0 +1,48 @@
+[Excerpt from the original test run]
+20:02:58 === shim-test
+20:02:58 make[1]: warning: -jN forced in submake: disabling jobserver mode.
+20:02:58 docker compose --profile test run --rm shim-test
+20:02:58  Container javauma4agents-shim-test-run-72790d21c93d Creating
+20:02:58  Container javauma4agents-shim-test-run-72790d21c93d Created
+20:02:58 == elicitation-capable client (the Claude Code case) ==
+20:02:58 uma4a launcher: exec java -jar /app/shim.jar
+20:02:59 [agent-shim] proxying https://gateway.uma.lab/mcp; keystore /tmp/shim-key-elicit.pem
+20:02:59 PASS: shim exposes the vault tools
+[19 lines omitted]
+20:03:02 PASS: first contact connects, then tier 1 grants
+20:03:02 PASS: terms were rendered inside the agent
+[18 lines omitted]
+20:03:05 PASS: tier 3 pends, Alice approves, trade executes
+[14 lines omitted]
+20:03:11 PASS: standing-config fallback (no elicitation client)
+[42 lines omitted]
+20:03:23 PASS: call completes after the owner decides
+20:03:23 PASS: the wait was handed back to Bob, not held open
+20:03:23 PASS: the pend names a principal Bob is not and cannot reach
+[1 lines omitted]
+20:03:25 shim-test: 8 passed, 0 failed
+[44 lines omitted]
+20:03:31 11 passed, 0 failed
+[1 lines omitted]
+20:03:31 PASS: a second implementation, sharing no code with the first, ran the four beats.
+[11 lines omitted]
+20:03:35 4 passed, 0 failed
+[34 lines omitted]
+20:03:44 PASS: the requested acts completed
+[28 lines omitted]
+20:03:50 PASS: the requested acts completed
+[38 lines omitted]
+20:04:01 PASS: the requested acts completed
+[33 lines omitted]
+20:04:08 PASS: the requested acts completed
+[71 lines omitted]
+20:04:24 PASS: a resource enforced its owner's UMA policy with no gateway
+[49 lines omitted]
+20:04:30   person-server: OK
+20:04:30 ==> Grafana...
+20:04:30   grafana: OK
+20:04:30 ==> Loki has protocol events from this project's PEP...
+20:04:30   loki events: OK (javauma4agents-uma-pep-1)
+20:04:30 ==> ... and an allowed call there carries the caller's W3C trace context...
+20:04:31   trace events: OK (javauma4agents-uma-pep-1)
+20:04:31 make -j8 check-live exit=0

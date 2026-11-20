@@ -1,0 +1,8 @@
+Pinned rule-validation cases checked: 205
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.103 s -- in io.uma4agents.authserver.CodexRuleSaveOracleTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in io.uma4agents.authserver.CodexPolicyOracleTest
+Assurance cases checked: 189
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in io.uma4agents.authserver.CodexAssuranceOracleTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in io.uma4agents.authserver.CodexIntroductionOracleTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

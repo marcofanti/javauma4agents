@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Serves the static SPA (byte-identical files copied from the Python portal). */
+/** Serves the pinned upstream SPA, vendored unchanged under conformance/upstream. */
 @RestController
 public class PageController {
 

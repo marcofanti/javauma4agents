@@ -1,0 +1,6 @@
+ok   an unauthorized call is challenged
+ok   the ticket draws the owner's dictated terms
+ok   a decline is answered 403 request_denied
+ok   and the declined negotiation's ticket is no longer accepted
+
+4 passed, 0 failed

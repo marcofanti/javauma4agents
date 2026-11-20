@@ -1,0 +1,3 @@
+PASS: portal served pinned login, JavaScript and CSS bytes
+PASS: Carol signed in with her Keycloak session and received the pinned portal page
+PASS: Carol's idle SSE channel delivered two heartbeats across 30.0 seconds

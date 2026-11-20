@@ -7,19 +7,11 @@ binds:
       - protocol: HTTP
         routes:
           # RFC 9728 Protected Resource Metadata: open discovery of the
-          # owner's AS and the protected tool surface (served by the PEP).
+          # owner's AS and the *structural* tool surface (served by the PEP).
           - name: protected-resource-metadata
             matches:
               - path:
                   pathPrefix: /.well-known/oauth-protected-resource
-            backends:
-              - host: "uma-pep:9002"
-          # The AAuth-binding encoding of the same public layer: R3
-          # vocabulary + access_mode, sharing the same protected endpoint.
-          - name: aauth-resource-metadata
-            matches:
-              - path:
-                  pathPrefix: /.well-known/aauth-resource.json
             backends:
               - host: "uma-pep:9002"
           # The resource's signing keys (RFC 9728 jwks_uri) — verifies
@@ -40,6 +32,186 @@ binds:
                   pathPrefix: /owner-resources
             backends:
               - host: "uma-pep:9002"
+          - name: northwind-vault-mcp
+            matches:
+              - path:
+                  pathPrefix: /mcp/shared
+            policies:
+              cors:
+                allowOrigins:
+                  - "*"
+                allowHeaders:
+                  - mcp-protocol-version
+                  - content-type
+                  - cache-control
+                  - mcp-session-id
+                  - authorization
+                exposeHeaders:
+                  - "Mcp-Session-Id"
+                  - "WWW-Authenticate"
+              extAuthz:
+                host: "uma-pep:9002"
+                # The PEP needs the MCP JSON-RPC body (tool name + args for
+                # scoping and tier-3 operation binding) and the signature
+                # headers (proof-of-possession verification).
+                includeRequestBody:
+                  maxRequestBytes: 16384
+                includeRequestHeaders:
+                  # Past maxRequestBytes the body is truncated and forwarded,
+                  # not refused — so the tool name can vanish from a call that
+                  # was merely padded. The PEP denies when this is set rather
+                  # than inferring it from a body that will not parse.
+                  - x-envoy-auth-partial-body
+                  - authorization
+                  - signature
+                  - signature-input
+                  - content-digest
+                  - host
+                  - content-type
+                  # SEP-2243 mirrors the JSON-RPC method and target into
+                  # headers. The PEP reconciles them against the body rather
+                  # than trusting either alone.
+                  - mcp-method
+                  - mcp-name
+                  - mcp-protocol-version
+                  # MCP 2026-07-28 requires Origin validation at the resource.
+                  - origin
+                  # Web Bot Auth: covered by the request signature, so the
+                  # PEP must see it to reconstruct the signature base.
+                  - signature-agent
+                  # W3C Trace Context, so protocol events join the caller's trace.
+                  - traceparent
+                protocol:
+                  http:
+                    # CEL: forward the original path so the PEP can map
+                    # tool calls to registered resources
+                    path: '"/check" + request.path'
+            backends:
+              - mcp:
+                  targets:
+                    - name: northwind-vault
+                      mcp:
+                        host: http://northwind-vault-mcp:9020/mcp
+          - name: joint-vault-mcp
+            matches:
+              - path:
+                  pathPrefix: /mcp/joint
+            policies:
+              cors:
+                allowOrigins:
+                  - "*"
+                allowHeaders:
+                  - mcp-protocol-version
+                  - content-type
+                  - cache-control
+                  - mcp-session-id
+                  - authorization
+                exposeHeaders:
+                  - "Mcp-Session-Id"
+                  - "WWW-Authenticate"
+              extAuthz:
+                host: "uma-pep:9002"
+                # The PEP needs the MCP JSON-RPC body (tool name + args for
+                # scoping and tier-3 operation binding) and the signature
+                # headers (proof-of-possession verification).
+                includeRequestBody:
+                  maxRequestBytes: 16384
+                includeRequestHeaders:
+                  # Past maxRequestBytes the body is truncated and forwarded,
+                  # not refused — so the tool name can vanish from a call that
+                  # was merely padded. The PEP denies when this is set rather
+                  # than inferring it from a body that will not parse.
+                  - x-envoy-auth-partial-body
+                  - authorization
+                  - signature
+                  - signature-input
+                  - content-digest
+                  - host
+                  - content-type
+                  # SEP-2243 mirrors the JSON-RPC method and target into
+                  # headers. The PEP reconciles them against the body rather
+                  # than trusting either alone.
+                  - mcp-method
+                  - mcp-name
+                  - mcp-protocol-version
+                  # MCP 2026-07-28 requires Origin validation at the resource.
+                  - origin
+                  # Web Bot Auth: covered by the request signature, so the
+                  # PEP must see it to reconstruct the signature base.
+                  - signature-agent
+                  # W3C Trace Context, so protocol events join the caller's trace.
+                  - traceparent
+                protocol:
+                  http:
+                    # CEL: forward the original path so the PEP can map
+                    # tool calls to registered resources
+                    path: '"/check" + request.path'
+            backends:
+              - mcp:
+                  targets:
+                    - name: joint-vault
+                      mcp:
+                        host: http://joint-vault-mcp:9020/mcp
+          - name: carol-vault-mcp
+            matches:
+              - path:
+                  pathPrefix: /mcp/carol
+            policies:
+              cors:
+                allowOrigins:
+                  - "*"
+                allowHeaders:
+                  - mcp-protocol-version
+                  - content-type
+                  - cache-control
+                  - mcp-session-id
+                  - authorization
+                exposeHeaders:
+                  - "Mcp-Session-Id"
+                  - "WWW-Authenticate"
+              extAuthz:
+                host: "uma-pep:9002"
+                # The PEP needs the MCP JSON-RPC body (tool name + args for
+                # scoping and tier-3 operation binding) and the signature
+                # headers (proof-of-possession verification).
+                includeRequestBody:
+                  maxRequestBytes: 16384
+                includeRequestHeaders:
+                  # Past maxRequestBytes the body is truncated and forwarded,
+                  # not refused — so the tool name can vanish from a call that
+                  # was merely padded. The PEP denies when this is set rather
+                  # than inferring it from a body that will not parse.
+                  - x-envoy-auth-partial-body
+                  - authorization
+                  - signature
+                  - signature-input
+                  - content-digest
+                  - host
+                  - content-type
+                  # SEP-2243 mirrors the JSON-RPC method and target into
+                  # headers. The PEP reconciles them against the body rather
+                  # than trusting either alone.
+                  - mcp-method
+                  - mcp-name
+                  - mcp-protocol-version
+                  # MCP 2026-07-28 requires Origin validation at the resource.
+                  - origin
+                  # Web Bot Auth: covered by the request signature, so the
+                  # PEP must see it to reconstruct the signature base.
+                  - signature-agent
+                  # W3C Trace Context, so protocol events join the caller's trace.
+                  - traceparent
+                protocol:
+                  http:
+                    # CEL: forward the original path so the PEP can map
+                    # tool calls to registered resources
+                    path: '"/check" + request.path'
+            backends:
+              - mcp:
+                  targets:
+                    - name: carol-vault
+                      mcp:
+                        host: http://carol-vault-mcp:9020/mcp
           - name: alice-vault-mcp
             matches:
               - path:
@@ -65,11 +237,30 @@ binds:
                 includeRequestBody:
                   maxRequestBytes: 16384
                 includeRequestHeaders:
+                  # Past maxRequestBytes the body is truncated and forwarded,
+                  # not refused — so the tool name can vanish from a call that
+                  # was merely padded. The PEP denies when this is set rather
+                  # than inferring it from a body that will not parse.
+                  - x-envoy-auth-partial-body
                   - authorization
                   - signature
                   - signature-input
+                  - content-digest
                   - host
                   - content-type
+                  # SEP-2243 mirrors the JSON-RPC method and target into
+                  # headers. The PEP reconciles them against the body rather
+                  # than trusting either alone.
+                  - mcp-method
+                  - mcp-name
+                  - mcp-protocol-version
+                  # MCP 2026-07-28 requires Origin validation at the resource.
+                  - origin
+                  # Web Bot Auth: covered by the request signature, so the
+                  # PEP must see it to reconstruct the signature base.
+                  - signature-agent
+                  # W3C Trace Context, so protocol events join the caller's trace.
+                  - traceparent
                 protocol:
                   http:
                     # CEL: forward the original path so the PEP can map

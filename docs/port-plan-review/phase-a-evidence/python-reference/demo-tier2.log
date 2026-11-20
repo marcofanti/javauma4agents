@@ -1,0 +1,31 @@
+ Container refstack-demo-driver-run-d2e9b9b0588d Creating
+ Container refstack-demo-driver-run-d2e9b9b0588d Created
+
+   running pseudonymously: the bare agent key is the identity
+   operator metadata: https://agent.uma.lab/agent.json
+   key published for discovery: https://agent.uma.lab/.well-known/http-message-signatures-directory
+
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+   resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp (signed: yes)
+   authorization server(s): https://alice-as.uma.lab
+   tool surface: get_positions (scopes positions:read)
+   tool surface: get_transactions (scopes transactions:read)
+   tool surface: execute_trade (scopes trades:execute)
+   note: which resources belong to whom is not in the public document — owner instances live behind the protected owner-resources endpoint
+   MCP session established through the gateway (discovery is open)
+
+== Act 2 (midday): transaction history — watch the terms tighten ==
+   challenged: 401 from the gateway, ticket YWxpY2U~tkt_pBMaxOc5…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Portfolio analysis for the current advisory engagement (expires 86400s, prohibited: client-benchmarking, sharing-outside-engagement-team, retention-after-engagement)
+   [bob-standing-config] terms accepted: purpose='Portfolio analysis for the current advisory engagement' expires_in=86400 prohibited=['client-benchmarking', 'sharing-outside-engagement-team', 'retention-after-engagement']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] logged in at her IdP (direct-access grant)
+   [simulated-alice] approving operation request fam_3HVf3jDL_iM from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier2/v2 · agreement s256:k0hMlMOshVCX-b_…
+   data received: {"account": "brokerage-main", "transactions": [{"account": "brokerage-main", "date": "2026-06-24", "type": "buy", "symbol": "VTI", "quantity…
+
+PASS: the requested acts completed
