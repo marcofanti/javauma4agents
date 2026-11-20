@@ -51,7 +51,12 @@ The gateway and the grant loop exist for the second case.
 | `alice-portal` | Meridian Wealth: dashboard, holdings, trade, and Settings → Security → Agent Authorization | Java 26 / Spring Boot + vanilla SPA |
 | `keycloak` | Alice's identity provider and OIDC login for the portal | Keycloak |
 | `person-server` | AAuth Person/Agent server — the agent-identity component for the identified-level path (the demo default signs pseudonymously) | upstream (pinned) |
-| `agent-shim` | Local proxy that lets an unmodified MCP client be the requesting agent | Java 26 / MCP Java SDK |
+| `agent-shim` | Allows an unchanged MCP client to request a grant through stdio or streamable HTTP | Java 26 / MCP Java SDK |
+| `carol-as`, `carol-vault-mcp`, `carol-portal` | Carol's services with independent state, signing keys and owner session | The same Java service images |
+| `org-authority`, `opa`, `org-console` | Northwind's charter, membership, clearance and organization administration | Java 26 / Spring Boot and OPA |
+| `joint-tally`, `joint-vault-mcp` | Joint account mandates, signed holder verdicts, and the vault that serves both accounts | Java 26 / Spring Boot |
+| `xaa-broker`, `northwind-idp` | Enterprise identity exchange and Northwind's independent workforce directory | Java 26 / Spring Boot and Keycloak |
+| `n8n-sidecar`, `n8n` | Optional profile that protects a real workflow with the Java enforcement point | Java 26 / Spring Boot and pinned n8n |
 | observability | Grafana + Loki + Promtail; one structured event per protocol step, ticket = correlation id | Grafana stack |
 
 Shared code in `lib/`: `uma4a-common` (canonical JSON matching CPython's
@@ -59,6 +64,8 @@ Shared code in `lib/`: `uma4a-common` (canonical JSON matching CPython's
 the agent side and the PEP so signer and verifier can't drift) and
 `uma4a-agent` (the requesting-agent side of the grant loop plus AAuth
 enrollment, used by both the shim and the headless demo driver).
+`uma4a-pep` contains the shared enforcement core used by the gateway
+callout, the embedded vault, and the n8n sidecar.
 
 ## The four-beat grant (agent's view)
 
@@ -78,8 +85,8 @@ Protected Resource Metadata (`/.well-known/oauth-protected-resource`) naming
 the owner's AS and the *structural* tool surfaces, and both clients
 corroborate each challenge against it. Which instances belong to whom is not
 public: the owner-bound listing (`/owner-resources`) is served only to
-Alice's AS, which pulls it to build its registry (`REGISTRATION_MODE=pull`,
-the default; classic push RReg remains conformant). See
+Alice's AS, which pulls it to build its registry (declarative registration;
+push RReg was removed upstream and here). See
 [PROTOCOL.md](PROTOCOL.md) for the exact messages.
 
 ## The day-1 handshake (first contact)
@@ -128,6 +135,11 @@ explicitly so they work without host configuration.
 | `keycloak.uma.lab` | Keycloak |
 | `grafana.uma.lab` | Grafana |
 | `ps.uma.lab` | person-server |
+| `carol-as.uma.lab`, `carol-portal.uma.lab` | Carol's authority and portal |
+| `northwind-org.uma.lab`, `org-console.uma.lab` | Northwind's organization authority and console |
+| `joint-tally.uma.lab` | Published joint mandates and the tally authority |
+| `northwind-xaa.uma.lab`, `northwind-idp.uma.lab` | The exchange broker and workforce realm |
+| `n8n.uma.lab` | The optional workflow sidecar |
 
 ## Reimplementing this
 

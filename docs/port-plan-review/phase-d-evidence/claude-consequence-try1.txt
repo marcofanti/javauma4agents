@@ -1,0 +1,46 @@
+docker compose --profile test run --rm consequence-check
+ Volume claude-phase-d_driver-keys Creating
+ Volume claude-phase-d_driver-keys Creating
+ Volume claude-phase-d_driver-keys Created
+ Volume claude-phase-d_driver-keys Created
+ Container claude-phase-d-consequence-check-run-8c896327c4f9 Creating
+ Container claude-phase-d-consequence-check-run-8c896327c4f9 Created
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+
+== 1 · the resource says what its own operations leave behind ==
+   published: execute_trade=irreversible, get_positions=reversible, get_transactions=reversible
+   ok   the trade declares that it cannot be undone
+   ok   and the two reads declare that there is nothing to put back
+   ok   the class is covered by the resource's own signature
+
+== 2 · her authority holds what the resource published ==
+   ok   the class arrives in her registry by the pull, not by configuration
+   ok   and it is there for every operation the resource described
+
+== 3 · what her policy is allowed to do with it ==
+   ok   her editor offers the classes as conditions
+   ok   and says that none of them may relax a requirement
+   ok   a rule that would grant automatically because an act is irreversible cannot be saved at all
+   ok   nor one naming a class nobody defined
+
+== 4 · the rule she writes names no tool ==
+   tier 1 and tier 3 now carry one rule: ask about what cannot be undone
+   ok   an unauthorized call is challenged
+   ok   a stranger is asked about, because she has never met it
+   ok   and the grant completes once she says yes
+   ok   a standing agent reading her holdings is not asked about again, because that operation can be undone
+   ok   and nothing is waiting on her
+   ok   the challenge tells the agent what the act would leave behind, before it negotiates for it
+   ok   she is asked about the trade
+   ok   and the reason she is being asked is the class, not the tool
+   because: ["request.consequence_at_or_above:irreversible"]
+   ok   the grant arrives after she answers
+   ok   and the call she approved goes through
+   ok   her record of what was promised says what was at stake
+   ok   and the record of the read says what that was, which is not the same thing
+   ok   her tiers are put back as they were
+
+22 passed, 0 failed

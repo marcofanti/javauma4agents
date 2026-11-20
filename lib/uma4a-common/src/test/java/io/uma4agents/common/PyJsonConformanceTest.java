@@ -35,6 +35,25 @@ class PyJsonConformanceTest {
     }
 
     @Test
+    @DisplayName("compactSortedUnicode and compactOrdered match the pinned CPython forms")
+    void matchesPinnedUnicodeAndOrderedVectors() throws Exception {
+        JsonNode vectors;
+        try (InputStream in = getClass().getResourceAsStream("/pinned/pyjson-unicode-vectors.json")) {
+            vectors = new ObjectMapper().readTree(in);
+        }
+        int count = 0;
+        for (JsonNode vector : vectors) {
+            JsonNode value = vector.get("value");
+            assertEquals(vector.get("compact_sorted_unicode").textValue(),
+                    PyJson.compactSortedUnicode(value), "unicode mismatch for vector " + count);
+            assertEquals(vector.get("compact_ordered").textValue(),
+                    PyJson.compactOrdered(value), "ordered mismatch for vector " + count);
+            count++;
+        }
+        assertEquals(6, count);
+    }
+
+    @Test
     void handlesPlainJavaGraphs() {
         Map<String, Object> params = Map.of("symbol", "VTI", "side", "sell", "quantity", 40);
         assertEquals("{\"quantity\": 40, \"side\": \"sell\", \"symbol\": \"VTI\"}",

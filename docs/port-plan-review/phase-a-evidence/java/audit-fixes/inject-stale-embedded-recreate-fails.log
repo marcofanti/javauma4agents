@@ -1,0 +1,6 @@
+injected: embedded recreate fails
+could not recreate the vault in embedded mode
+the vault did not come up in embedded mode; the check did not run
+==> Restoring ENFORCEMENT_MODE=gateway
+==> embedded-check: check=0 switch=1 restore=0
+script exit=1

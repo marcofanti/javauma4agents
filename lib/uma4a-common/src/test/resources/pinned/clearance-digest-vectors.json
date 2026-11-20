@@ -1,0 +1,56 @@
+[
+  {
+    "facts": {},
+    "canonical": "{}",
+    "digest": "s256:RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4o"
+  },
+  {
+    "facts": {
+      "state": "NY",
+      "broker": true,
+      "registration": [
+        "SEC",
+        "FINRA"
+      ]
+    },
+    "canonical": "{\"broker\":true,\"registration\":[\"SEC\",\"FINRA\"],\"state\":\"NY\"}",
+    "digest": "s256:z6U76AKaKi7RPfoxg7U7_NqI5JcPFEk8sSN2hTnLOL0"
+  },
+  {
+    "facts": {
+      "\ue000": "BMP private use",
+      "\ud800\udc00": "supplementary",
+      "z": "last ASCII"
+    },
+    "canonical": "{\"z\":\"last ASCII\",\"\ue000\":\"BMP private use\",\"\ud800\udc00\":\"supplementary\"}",
+    "digest": "s256:9GkwNQC5EvwJ8Yr_wy0eb37VoPDyr6wCxEvktOqAOfo"
+  },
+  {
+    "facts": {
+      "small": 1e-07,
+      "threshold": 1e-06,
+      "decimal": 1.0,
+      "zero": -0.0,
+      "long": 1e+20,
+      "tiny": 1e-29,
+      "large": 9007199254740993
+    },
+    "canonical": "{\"decimal\":1.0,\"large\":9007199254740993,\"long\":1e+20,\"small\":1e-07,\"threshold\":1e-06,\"tiny\":1e-29,\"zero\":-0.0}",
+    "digest": "s256:cKcv6fFXeKz3QRjTxtzKIoS1iUK765AxrluZi48MLao"
+  },
+  {
+    "facts": {
+      "\ud83d\udd12": "\u00e9\n\t",
+      "nested": {
+        "\u2028": "\\path",
+        "x": [
+          1,
+          1.0,
+          false
+        ]
+      }
+    },
+    "canonical": "{\"nested\":{\"x\":[1,1.0,false],\"\u2028\":\"\\\\path\"},\"\ud83d\udd12\":\"\u00e9\\n\\t\"}",
+    "digest": "s256:sgdSHk2wT5CrQhuDCXpuUVs0sUVCZQTN3cAFjzOy7as"
+  }
+]

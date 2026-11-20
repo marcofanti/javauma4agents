@@ -12,5 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /src/mcp/alice-vault/target/alice-vault.jar app.jar
+COPY mcp/alice-vault/fixtures-carol.json fixtures-carol.json
+COPY mcp/alice-vault/fixtures-northwind.json fixtures-northwind.json
+COPY mcp/alice-vault/fixtures-joint.json fixtures-joint.json
 EXPOSE 9020
 CMD ["java", "-jar", "app.jar"]

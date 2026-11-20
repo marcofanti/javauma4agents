@@ -1,0 +1,13 @@
+Initial abbreviated topology (invalid control)
+no challenge for get_positions: 503 {"error": "temporarily_unavailable", "error_description": "the owner's authorization server could not issue a ticket for this resource"}
+
+Pinned intent control with the configured dependencies
+42 passed, 0 failed
+PASS: her terms could not be signed weaker than she wrote them, the
+
+assurance-check
+26 passed, 0 failed
+PASS: assurance tightened and never widened, standing was per tier,
+
+consequence-check
+22 passed, 0 failed

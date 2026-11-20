@@ -1,0 +1,17 @@
+{
+  "_comment": [
+    "The tool surface this sidecar protects, read at startup via UMA_PEP_TOOLS.",
+    "The resource id is what the owner's tiers name, so the split here is the",
+    "split she gets to approve. One entry per tool that should be separately",
+    "decidable. Keys beginning with _ are ignored."
+  ],
+  "get_invoices": {
+    "resource": "billing/get_invoices",
+    "scopes": ["invoices:read"]
+  },
+  "issue_refund": {
+    "resource": "billing/issue_refund",
+    "scopes": ["refunds:write"],
+    "single_use": true
+  }
+}

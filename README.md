@@ -8,12 +8,16 @@ into the agent era: the owner sets policy once, and other people's AI agents
 negotiate access to her resources against it — while she's offline for the easy
 cases, and with a tap for the sensitive ones.
 
-The custom services (`uma-as`, `uma-pep`, `alice-portal`, `alice-vault-mcp`)
-and the agent-side clients (grant loop, demo driver, agent shim) are Spring
-Boot 4 / Java 26 in a multi-module Maven build (`lib/uma4a-common`,
-`lib/uma4a-agent`, `services/*`, `mcp/*`, `clients/*`), wire-compatible with
-the Python reference: hostnames, ports, env vars, JSON payloads, JWT shapes,
-and the RFC 9421 signing profile are identical. Third-party infrastructure
+The custom services (`uma-as`, `uma-pep`, `alice-portal`, `alice-vault-mcp`,
+`agent-operator`) and the agent-side clients (grant loop, agent shim, an example
+walker) are Spring Boot 4 / Java 26 in a multi-module Maven build
+(`lib/uma4a-common`, `lib/uma4a-pep`, `lib/uma4a-agent`, `services/*`, `mcp/*`,
+`clients/*`). This Java port targets upstream
+[`77649287dc883b75ef563c59f96de8613ecf10d0`](https://github.com/nickgamb/uma4agents/tree/77649287dc883b75ef563c59f96de8613ecf10d0)
+for the [Compose release scope](docs/PORT-PLAN.md). It implements the phased
+transport, identity, persistence, policy, ownership, and integration work.
+The upstream check scripts, demo driver and TypeScript agent run
+unchanged against the Java services — see [Conformance](#conformance). Third-party infrastructure
 (Keycloak, Envoy edge, agentgateway, hickory-dns, Grafana/Loki/Promtail, and
 the upstream AAuth person-server) is unchanged.
 
@@ -100,16 +104,25 @@ Prerequisites: Docker Desktop (or Engine + Compose v2) and
 [mkcert](https://github.com/FiloSottile/mkcert) (`brew install mkcert`).
 
 ```bash
-make init        # local CA, TLS certs, signing keys, DNS for *.uma.lab
+make init        # local CA, TLS certs, signing keys, Alice's device key, DNS for *.uma.lab
 make up          # the whole stack
-make smoke-test  # verify every service, including the live grant challenge
+make smoke-alice # verify every service, including the live grant challenge
 ```
 
 Then either watch it run headlessly, or drive it with your own agent:
 
 ```bash
-make demo-all SIM=1   # walk all three acts; SIM approves Alice's taps for you
+make demo-acts-a      # walk the acts with the upstream driver, Alice's taps simulated
+make demo-acts-b      # the same acts as an enrolled (identified) agent
+make flow-check       # four identity regimes, one unchanged owner
 make audit            # print the promised / touched / approved ledger
+```
+
+The protocol on its own, with no identity provider, database, gateway or `make init`:
+
+```bash
+make fixture          # Java uma-as + vault, owner signs with her own key
+make fixture-down
 ```
 
 Open **https://portal.uma.lab** to sign in as Alice (`alice` / `alice-demo`),
@@ -118,6 +131,14 @@ Observability is at **https://grafana.uma.lab**.
 
 `make init` offers to configure `/etc/resolver/uma.lab` (sudo) and you can run
 `make trust-ca` so your browser trusts the local certificates.
+
+**Upgrading a Phase A checkout.** Phase B bind-mounts Alice's public device key
+(`certs/owner-ed25519.pub`) into `uma-as`. `make up` runs `make owner-key` first, so a
+plain `make up` provisions it. If you already have `certs/owner-ed25519.pem`, it derives
+the public half from it and never rotates it. Start the stack with `make up` rather
+than `docker compose up`: Compose creates a directory at a missing bind path, and
+`make owner-key` then refuses until that directory is removed (see
+[Troubleshooting](#troubleshooting)).
 
 ## Connect your own agent
 
@@ -158,12 +179,127 @@ agreed. Full detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Target | Purpose |
 |---|---|
 | `make init` | Local CA, TLS certs, signing keys, DNS |
-| `make up` / `make down` | Start / tear down the stack |
-| `make smoke-test` | Verify every service end to end |
-| `make demo-tier1/2/3`, `make demo-all` | Walk the demo acts (add `SIM=1` to auto-approve) |
+| `make up` / `make down` | Start the stack / tear it down, deleting its volumes |
+| `make smoke-alice` | Verify every service end to end (Phase A smoke profile) |
+| `make demo-acts-a` | Walk tiers 1–3 and revocation with the upstream driver |
+| `make demo-acts-b` | The same acts as an identified agent enrolled with the person server |
+| `make flow-check` | Four identity regimes against one unchanged owner, and an agent withdrawn at the person server |
+| `make fixture` / `make fixture-down` | The standalone fixture: local-key owner, vault serving its own TLS, own Compose project |
+| `make owner-key` | Provision Alice's Ed25519 device key (`certs/owner-ed25519.pem`; the AS reads only the `.pub`). Run by `make up` and `make init`; derives a missing public half, never rotates, refuses a directory or mismatched pair |
+| `make token-test` | Focused AAuth agent-token, owner-authentication and handle tests |
+| `make vectors` | Regenerate the CPython ground-truth vectors from the pinned modules |
+| `make demo-tier1/2/3` | Walk one act (add `SIM=1` to auto-approve) |
+| `make check-unit` / `make check-live` / `make check-all` | Unit gate, live upstream gates, both |
+| `make vendor-verify` | Check the vendored upstream clients against their pinned hashes |
 | `make audit` | Print Alice's activity ledger |
-| `make reset` | Rewind demo state |
+| `make reset` | Rewind demo state (the memory store; a durable store is reset by replacing its database) |
+| `make store-test` | Store properties on memory and real Postgres 17, two replicas on one database; Postgres required |
+| `make rotation-check` | Rotate the authority's signing key under live grants (pinned check, Postgres-backed recreate, restores) |
+| `make establishment-check` | Exercise an independently configured resource server's introduction, owner approval and withdrawal |
+| `make multi-owner-check` | Verify Alice and Carol each use their own authority, signing key, identity realm, policy and holdings |
+| `make org-check` | Verify Northwind membership, charter enforcement, role changes and delegated administration |
+| `make clearance-check` | Verify owner clearance attestation, withdrawal and the digest carried in the RPT |
+| `make rego-test` | Re-run the shared charter pattern vectors in the pinned OPA version |
+| `make joint-check` | Exercise the same UMA grant at every-holder and either-holder accounts |
+| `make xaa-check` | Verify discovery-driven enterprise exchange and the owner and resource boundaries |
+| `make smoke-test` | Verify the full stack, including Carol, ID-JAG discovery and the workforce realm |
+| `make adapter-check` | Reach the lab using an ordinary MCP client through the Java adapter |
+| `make kwaai-check` / `make paios-check` | Verify the owner device key and the pAI-OS ability |
+| `make n8n-check` | Run a protected n8n workflow through the Java sidecar |
+| `make owner ARGS='pending'` | List pending requests from the fixture using the Java owner CLI |
+| `make portal-check` | Sign into both owner portals and the organization console and exercise their APIs |
 | `make trust-ca` | Trust the local CA in your system store |
+
+## Conformance
+
+The independent clients are vendored byte-for-byte from upstream under
+[`conformance/upstream/`](conformance/upstream/) and checked by `make vendor-verify`.
+`make check-live` runs them against the Compose stack: the agent-shim check (through a
+launcher that execs the Java shim), the TypeScript agent, the upstream demo driver, the
+embedded-enforcement check, a supplemental decline check and the Alice-only smoke
+profile. Phase B adds the pinned `flow_check.py` (`make flow-check`), the driver's
+identified acts (`make demo-acts-b`) and `fixture_check.py` against
+[`compose.fixture.yml`](compose.fixture.yml) (`make fixture`). Results against both the
+Python reference and this port are in
+[PHASE-A-GATES.md](docs/port-plan-review/PHASE-A-GATES.md),
+[PHASE-B-GATES.md](docs/port-plan-review/PHASE-B-GATES.md) and
+[PHASE-C-GATES.md](docs/port-plan-review/PHASE-C-GATES.md). Phase C adds the pinned
+`rotation_check.py` (`make rotation-check`) and `make store-test`.
+[Phase D](docs/port-plan-review/PHASE-D-GATES.md) adds the intent, assurance,
+consequence, first-party and sub-agent checks and the full simulated demo.
+[Phase E1](docs/port-plan-review/PHASE-E1-CODEX-VERIFICATION.md) adds the
+establishment and multi-owner checks.
+[Phase E2](docs/port-plan-review/PHASE-E2-CODEX-VERIFICATION.md) adds the
+organization, clearance and Rego gates.
+[Phase E3](docs/port-plan-review/PHASE-E3-CODEX-VERIFICATION.md) adds the
+joint ownership check.
+[Phase E4](docs/port-plan-review/PHASE-E4-CODEX-VERIFICATION.md) adds the
+Cross App Access check and the full smoke gate.
+
+[Phase F](docs/port-plan-review/PHASE-F-CODEX-VERIFICATION.md) covers the
+MCP adapter, Kwaai and pAI-OS, the n8n sidecar, the Java owner CLI, and
+OIDC portal sessions. `make check-all` runs Maven and the staged Compose
+checks in order on the running lab. Start the lab with `make up` and use
+a fresh memory store for its simulated approvals.
+
+### Integrations and the standalone owner CLI
+
+The [Kwaai guide](docs/KWAAI-BINDING.md) explains the device-key and pAI-OS
+runs. The [n8n guide](integrations/n8n/README.md) describes the lab workflow
+and the standalone sidecar configuration.
+
+The owner CLI runs with the no-gateway fixture's device key.
+
+```sh
+make fixture
+make owner ARGS=policy
+make owner ARGS=pending
+make owner ARGS=watch
+```
+
+Use `make owner ARGS='approve fam_…'` or `make owner ARGS='deny fam_…'`
+for a listed request, and `make owner ARGS='revoke jkt:…'` for a connection.
+To use the packaged CLI outside Docker, build it with
+`mvn -pl clients/owner-cli -am package` and run
+`java -jar clients/owner-cli/target/owner.jar --help`.
+
+Alice's vault is available at `https://gateway.uma.lab/mcp`, and Carol's at
+`https://gateway.uma.lab/mcp/carol`. Carol signs into
+`https://carol-portal.uma.lab` with the lab's `carol` / `carol-demo` user.
+The first protected request to her vault can prompt Meridian to register with
+her authority. Carol approves it under **Resource servers** in her portal.
+
+Northwind administers its charter at `https://org-console.uma.lab` using the
+lab account `dana` / `dana-demo`. Alice and Carol can preview and explicitly
+accept a version of the charter in their own portals. Their member paths
+`/mcp/shared/alice` and `/mcp/shared/carol` reach the same Northwind vault.
+
+**Where state lives.** `uma-as` keeps what the grant loop remembers in a store:
+`UMA_AS_STORE=memory` (the default; `make reset` rewinds it by restarting) or
+`postgres` over `UMA_AS_DATABASE_URL` (`postgres://user:pass@host:5432/db`), applying
+upstream's pinned `schema.sql` unchanged. Several AS processes can share one database. A
+database whose keys predate multi-owner is refused at startup, naming the tables, and
+must be recreated. Signing-key rotation uses `UMA_AS_SIGNING_KEY` and `UMA_AS_KID` for
+the new key and `UMA_AS_PREVIOUS_KEYS`/`UMA_AS_PREVIOUS_KIDS` for the ones still
+published.
+
+Live gates share one stack, so run them one at a time (`make check-live` does) from known
+seed state (`make reset`). To run beside another stack, give this one its own Compose
+project and host ports:
+
+```bash
+export COMPOSE_PROJECT_NAME=java-b UMA4A_EDGE_PORT=8443 UMA4A_DNS_PORT=5054
+make up && make reset && make check-live
+FIXTURE_PROJECT=java-b-fixture make fixture
+```
+
+The smoke probes reach the edge with `curl --connect-to`, so they follow
+`UMA4A_EDGE_PORT`. The fixture publishes no host ports.
+
+The person server is built from the pinned source with its own `uv.lock`, installed with
+hashes ([`aauth/person-server.Dockerfile`](aauth/person-server.Dockerfile)). That holds
+`aauth-signing` at 0.1.2. An unconstrained `pip install -e .` resolves 0.2.0, which
+fails enrollment with a 500 (`Missing or unsupported fully-specified alg`).
 
 ## Demo credentials — not secrets
 
@@ -195,6 +331,8 @@ respectively); none of them are configured strings.
 | `mkcert: command not found` | `brew install mkcert` (macOS) |
 | Browser can't resolve `*.uma.lab` | `make dns-setup`, then restart the browser |
 | TLS warnings in the browser | `make trust-ca` |
+| `owner-key: … owner-ed25519.pub exists but is not a regular file` | A stack was started before the key existed and Docker created a directory at the bind path. Keeping the volumes: `docker compose stop uma-as`, `rmdir certs/owner-ed25519.pub` (it is empty), then `make up`, which provisions the key first. Not `make down`: it deletes every volume |
+| `owner-key: … does not match …` or `… exists without …` | The key pair in `certs/` is inconsistent. Restore the missing or matching half, or move both aside to make a new pair. The target never rotates a key |
 | A config edit isn't picked up | `docker compose up -d --force-recreate <svc>` (single-file mounts go stale on inode swap) |
 
 ## License & attribution

@@ -1,0 +1,7 @@
+As wired
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.112 s -- in io.uma4agents.authserver.GrantLoopTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Scratch reversion of stale write
+org.opentest4j.AssertionFailedError: a PAT was issued after she revoked ==> expected: <403> but was: <200>

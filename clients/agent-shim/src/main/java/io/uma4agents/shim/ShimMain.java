@@ -1,8 +1,5 @@
 package io.uma4agents.shim;
 
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -17,232 +14,197 @@ import io.uma4agents.agent.AgentKeys;
 import io.uma4agents.agent.EnrollClient;
 import io.uma4agents.agent.GrantClient;
 import io.uma4agents.common.SslContexts;
+import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
- * agent-shim — lets an unmodified agent (Claude Code, Claude Desktop, any MCP
- * client) act as Bob's requesting agent: a local stdio MCP server that proxies
- * Alice's vault tools through the gateway, holds Bob's agent signing key, and
- * runs the four-beat grant dance whenever the gateway challenges. Alice's
- * dictated terms are surfaced to Bob inside his agent via MCP elicitation when
- * the client supports it; otherwise Bob's standing config decides.
+ * agent-shim: lets an unmodified MCP client act as Bob's requesting agent. A local MCP server
+ * (stdio, or stateless streamable HTTP with {@code UMA4A_SHIM_TRANSPORT}) that proxies Alice's
+ * vault tools, holds Bob's signing key, and runs the grant whenever the resource challenges.
+ * Terms and pends are surfaced through MCP elicitation when the client supports it;
+ * otherwise Bob's standing config decides terms and a pend is handed back as a result.
  */
 public final class ShimMain {
 
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
-    private final String gateway = env("UMA4A_GATEWAY", "https://gateway.uma.lab/mcp");
-    private final String cacert = env("UMA4A_CACERT", "certs/rootCA.pem");
-    private final String keystore = env("UMA4A_KEYSTORE",
-            System.getProperty("user.home") + "/.uma4agents/agent-key.pem");
-    private final String receiptsDir;
-    private final long standingMaxExpires =
-            Long.parseLong(env("UMA4A_STANDING_MAX_EXPIRES", String.valueOf(7 * 24 * 3600)));
-    private final String agentIssuer = env("UMA4A_AGENT_ISSUER", null);
-    private final String personToken = env("UMA4A_PERSON_TOKEN", null);
-
+    final ShimEnv env = new ShimEnv();
     private final HttpClient http;
-    private final AgentKeys keys;
-    private final Upstream upstream;
+    private final ShimTools tools;
 
     private ShimMain() {
-        Path keystorePath = Path.of(keystore);
-        Path parent = keystorePath.getParent();
-        this.receiptsDir = env("UMA4A_RECEIPTS",
-                (parent == null ? Path.of(".") : parent).resolve("receipts").toString());
         HttpClient.Builder builder = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30));
-        if (cacert != null && Files.exists(Path.of(cacert))) {
-            builder.sslContext(SslContexts.fromPem(Path.of(cacert)));
+        if (Files.exists(Path.of(env.cacert))) {
+            builder.sslContext(SslContexts.fromPem(Path.of(env.cacert)));
         }
         this.http = builder.build();
-        this.keys = bootstrapIdentity();
-        this.upstream = new Upstream(http, keys, gateway, ShimMain::log, this::storeReceipt);
+        AgentKeys keys = bootstrapIdentity();
+        Upstream upstream = new Upstream(http, keys,
+                new Upstream.Settings(env.gateway, env.pendHandbackSeconds), ShimMain::log,
+                this::storeReceipt);
+        this.tools = new ShimTools(upstream, env.mission);
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException {
         ShimMain shim = new ShimMain();
-        log("proxying " + shim.gateway + "; keystore " + shim.keystore);
-        shim.serve();
+        log("proxying " + shim.env.gateway + "; keystore " + shim.env.keystore);
+        if ("stdio".equals(shim.env.transport)) {
+            shim.serveStdio();
+        } else {
+            new ShimHttp(shim.tools, shim.env.standingMaxExpires, ShimMain::log)
+                    .serve(shim.env.host, shim.env.port);
+            log("listening on " + shim.env.host + ":" + shim.env.port + " ("
+                    + shim.env.transport + ")");
+        }
         Thread.currentThread().join();
     }
 
-    private static void log(String msg) {
+    static void log(String msg) {
         System.err.println("[agent-shim] " + msg);
         System.err.flush();
     }
 
-    private static String env(String name, String fallback) {
-        String value = System.getenv(name);
-        return value == null || value.isBlank() ? fallback : value;
-    }
-
-    /** Pseudonymous by default; identified (enrolled) when an issuer is set. */
+    /** Pseudonymous by default; identified when an issuer is set; published when asked. */
     private AgentKeys bootstrapIdentity() {
-        if (agentIssuer == null) {
-            return AgentKeys.loadOrCreate(Path.of(keystore));
+        AgentKeys keys;
+        if (env.agentIssuer == null) {
+            keys = AgentKeys.loadOrCreate(Path.of(env.keystore));
+        } else {
+            keys = AgentKeys.loadOrCreateIdentified(Path.of(env.keystore));
+            keys.agentToken = EnrollClient.enroll(http, env.agentIssuer, keys.stable, keys.key,
+                    env.agentName, env.personToken, ShimMain::log, 300, 3);
+            log("enrolled with " + env.agentIssuer + "; running identified");
         }
-        AgentKeys identified = AgentKeys.loadOrCreateIdentified(Path.of(keystore));
-        identified.agentToken = EnrollClient.enroll(http, agentIssuer, identified.stable,
-                identified.key, "Bob's agent via uma4agents shim", personToken,
-                ShimMain::log, 300, 3);
-        log("enrolled with " + agentIssuer + "; running identified");
-        return identified;
+        if (env.publishTo != null) {
+            keys.clientId = env.publishTo + "/agent.json";
+            keys.signatureAgent = keys.publish(http, env.publishTo, env.registerToken);
+            log(keys.signatureAgent != null ? "key published at " + keys.signatureAgent
+                    : "operator directory unreachable; continuing without Signature-Agent");
+        }
+        if (env.clientId != null) {
+            keys.clientId = env.clientId;
+        }
+        return keys;
     }
 
-    /** Persist the counter-signed receipt — the agent's half of the dual record. */
+    /** Persists the counter-signed receipt under a name the receipt cannot steer. */
     private void storeReceipt(String receiptJws) {
-        String family = "unknown";
         try {
-            String payload = receiptJws.split("\\.")[1];
-            int pad = (4 - payload.length() % 4) % 4;
-            Map<String, Object> claims = MAPPER.readValue(
-                    Base64.getUrlDecoder().decode(payload + "=".repeat(pad)),
-                    new TypeReference<>() {});
-            if (claims.get("family") instanceof String f) {
-                family = f;
-            }
-        } catch (Exception e) {
-            // Keep the receipt anyway under "unknown".
-        }
-        try {
-            Path dir = Path.of(receiptsDir);
+            Path dir = Path.of(env.receiptsDir);
             Files.createDirectories(dir);
-            Path path = dir.resolve(family + ".receipt.jws");
+            Path path = dir.resolve(GrantClient.receiptFilename(receiptJws));
             Files.writeString(path, receiptJws);
             log("receipt held: " + path);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             log("could not persist receipt: " + e.getMessage());
         }
     }
 
-    /** Elicit Bob inside his agent; fall back to his standing config. */
-    private boolean approveTerms(McpSyncServerExchange exchange, String tool,
-                                 Map<String, Object> template) {
-        String message = "Alice's authorization server dictates these terms for `" + tool + "`:\n"
-                + "• purpose: " + template.get("purpose") + "\n"
-                + "• access expires in: " + template.get("expires_in") + "s\n"
-                + "• prohibited: " + joined(template.get("prohibited")) + "\n\n"
-                + "Sign this intent contract on your behalf?";
-        try {
-            ElicitResult result = exchange.createElicitation(
-                    ElicitRequest.builder(message, Map.of(
-                            "type", "object",
-                            "properties", Map.of("approve", Map.of("type", "boolean")),
-                            "required", List.of("approve"))).build());
-            if (result.action() == ElicitResult.Action.ACCEPT && result.content() != null) {
-                boolean approve = Boolean.TRUE.equals(result.content().get("approve"));
-                log("terms " + (approve ? "approved" : "refused") + " via elicitation");
-                return approve;
-            }
-            log("elicitation declined/cancelled — refusing terms");
-            return false;
-        } catch (Exception e) {  // client without elicitation support
-            long expiresIn = template.get("expires_in") instanceof Number n ? n.longValue() : 0;
-            boolean ok = expiresIn <= standingMaxExpires;
-            log("elicitation unavailable (" + e.getClass().getSimpleName() + "); standing config "
-                    + (ok ? "accepts" : "refuses") + " (max_expires=" + standingMaxExpires + ")");
-            return ok;
-        }
-    }
-
-    private static String joined(Object list) {
-        if (list instanceof List<?> items) {
-            return items.stream().map(String::valueOf).collect(Collectors.joining(", "));
-        }
-        return "";
-    }
-
-    private void serve() {
+    private void serveStdio() {
         JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(MAPPER);
-        StdioServerTransportProvider transport = new StdioServerTransportProvider(jsonMapper);
-        McpServer.sync(transport)
+        List<SyncToolSpecification> specs = new ArrayList<>();
+        for (ShimTools.Definition d : ShimTools.DEFINITIONS) {
+            specs.add(SyncToolSpecification.builder()
+                    .tool(Tool.builder().name(d.name()).description(d.description())
+                            .inputSchema(jsonMapper, d.inputSchema()).build())
+                    .callHandler((exchange, request) -> result(d.name(),
+                            () -> tools.call(d.name(), request.arguments(),
+                                    new ElicitingAsker(exchange, d.name()))))
+                    .build());
+        }
+        McpServer.sync(new StdioServerTransportProvider(jsonMapper))
                 .serverInfo("alice-vault-via-uma", "0.1.0")
                 .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-                .tools(
-                        tool(jsonMapper, "get_positions",
-                                "Alice's current holdings summary (tier 1: auto-grant under her"
-                                        + " standard terms).",
-                                "{\"type\":\"object\",\"properties\":{},\"required\":[]}",
-                                (exchange, args) -> upstream.callTool("get_positions", Map.of(),
-                                        null, t -> approveTerms(exchange, "get_positions", t))),
-                        tool(jsonMapper, "get_transactions",
-                                "Alice's transaction history (tier 2: stricter dictated terms).",
-                                "{\"type\":\"object\",\"properties\":{\"account\":{"
-                                        + "\"type\":\"string\",\"default\":\"brokerage-main\"}},"
-                                        + "\"required\":[]}",
-                                (exchange, args) -> {
-                                    String account = args.get("account") instanceof String s
-                                            ? s : "brokerage-main";
-                                    return upstream.callTool("get_transactions",
-                                            Map.of("account", account), null,
-                                            t -> approveTerms(exchange, "get_transactions", t));
-                                }),
-                        tool(jsonMapper, "execute_trade",
-                                "Propose a trade in Alice's account (tier 3: pends until Alice"
-                                        + " approves; the grant is single-use and bound to exactly"
-                                        + " this order).",
-                                "{\"type\":\"object\",\"properties\":{"
-                                        + "\"symbol\":{\"type\":\"string\"},"
-                                        + "\"side\":{\"type\":\"string\"},"
-                                        + "\"quantity\":{\"type\":\"integer\"}},"
-                                        + "\"required\":[\"symbol\",\"side\",\"quantity\"]}",
-                                (exchange, args) -> {
-                                    Map<String, Object> order = new LinkedHashMap<>();
-                                    order.put("symbol", args.get("symbol"));
-                                    order.put("side", args.get("side"));
-                                    order.put("quantity",
-                                            ((Number) args.get("quantity")).intValue());
-                                    Map<String, Object> operation = new LinkedHashMap<>();
-                                    operation.put("tool", "execute_trade");
-                                    operation.put("params", order);
-                                    try {
-                                        return upstream.callTool("execute_trade", order, operation,
-                                                t -> approveTerms(exchange, "execute_trade", t));
-                                    } catch (GrantClient.GrantDeniedException e) {
-                                        return "Alice did not authorize this trade: "
-                                                + e.getMessage();
-                                    } catch (GrantClient.TermsRejectedException e) {
-                                        return "You declined Alice's terms; the trade was not"
-                                                + " submitted.";
-                                    }
-                                }))
-                .build();
+                .tools(specs).build();
     }
 
-    private interface ToolHandler {
-        String handle(McpSyncServerExchange exchange, Map<String, Object> args);
+    private static CallToolResult result(String tool, java.util.function.Supplier<String> call) {
+        try {
+            return CallToolResult.builder()
+                    .content(List.of(new McpSchema.TextContent(call.get()))).build();
+        } catch (RuntimeException e) {
+            return CallToolResult.builder().isError(true).content(List.of(
+                    new McpSchema.TextContent("Error executing tool " + tool + ": "
+                            + e.getMessage()))).build();
+        }
     }
 
-    private static SyncToolSpecification tool(JacksonMcpJsonMapper jsonMapper, String name,
-                                              String description, String schema,
-                                              ToolHandler handler) {
-        return SyncToolSpecification.builder()
-                .tool(Tool.builder().name(name).description(description)
-                        .inputSchema(jsonMapper, schema).build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        String text = handler.handle(exchange,
-                                request.arguments() == null ? Map.of() : request.arguments());
-                        return CallToolResult.builder()
-                                .content(List.of(new McpSchema.TextContent(text)))
-                                .build();
-                    } catch (RuntimeException e) {
-                        return CallToolResult.builder()
-                                .isError(true)
-                                .content(List.of(new McpSchema.TextContent(
-                                        "Error executing tool " + name + ": " + e.getMessage())))
-                                .build();
-                    }
-                })
-                .build();
+    static String joined(Object list) {
+        return list instanceof List<?> items
+                ? items.stream().map(String::valueOf).collect(Collectors.joining(", ")) : "";
+    }
+
+    /** Terms and waits put to Bob inside his agent, through MCP elicitation. */
+    private final class ElicitingAsker implements Upstream.Asker {
+        private final McpSyncServerExchange exchange;
+        private final String tool;
+
+        ElicitingAsker(McpSyncServerExchange exchange, String tool) {
+            this.exchange = exchange;
+            this.tool = tool;
+        }
+
+        private boolean canElicit() {
+            McpSchema.ClientCapabilities caps = exchange.getClientCapabilities();
+            return caps != null && caps.elicitation() != null;
+        }
+
+        @Override
+        public boolean approveTerms(Map<String, Object> template) {
+            if (!canElicit()) {
+                boolean ok = ShimHttp.standingAccepts(template, env.standingMaxExpires);
+                log("elicitation unavailable (MCPError); standing config "
+                        + (ok ? "accepts" : "refuses") + " (max_expires="
+                        + env.standingMaxExpires + ")");
+                return ok;
+            }
+            String message = "Alice's authorization server dictates these terms for `" + tool
+                    + "`:\n• purpose: " + template.get("purpose") + "\n• access expires in: "
+                    + template.get("expires_in") + "s\n• prohibited: "
+                    + joined(template.get("prohibited"))
+                    + "\n\nSign this intent contract on your behalf?";
+            ElicitResult r = exchange.createElicitation(ElicitRequest.builder(message,
+                    booleanSchema("approve")).build());
+            boolean approve = r.action() == ElicitResult.Action.ACCEPT && r.content() != null
+                    && Boolean.TRUE.equals(r.content().get("approve"));
+            log(r.action() == ElicitResult.Action.ACCEPT
+                    ? "terms " + (approve ? "approved" : "refused") + " via elicitation"
+                    : "elicitation declined/cancelled — refusing terms");
+            return approve;
+        }
+
+        @Override
+        public boolean keepWaiting(GrantClient.Pend pend) {
+            if (!canElicit()) {
+                log("client cannot render the pend; handing it back to be polled");
+                throw new GrantClient.PendingHandbackException(pend.asUri(), pend.ticket());
+            }
+            String message = "`" + tool + "` is waiting on the resource owner's decision.\n\n"
+                    + "• who must decide: the resource owner — not you, and not reachable from "
+                    + "this connection\n• where: " + pend.asUri() + "\n• they have been "
+                    + "notified and the request is holding\n\nKeep waiting?";
+            ElicitResult r = exchange.createElicitation(ElicitRequest.builder(message,
+                    booleanSchema("keep_waiting")).build());
+            if (r.action() == ElicitResult.Action.ACCEPT && r.content() != null) {
+                return Boolean.TRUE.equals(r.content().get("keep_waiting"));
+            }
+            log("requesting side stopped waiting");
+            return false;
+        }
+    }
+
+    private static Map<String, Object> booleanSchema(String field) {
+        return Map.of("type", "object",
+                "properties", Map.of(field, Map.of("type", "boolean")),
+                "required", List.of(field));
     }
 }

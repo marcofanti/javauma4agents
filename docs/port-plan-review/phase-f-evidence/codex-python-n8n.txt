@@ -1,0 +1,26 @@
+PASS: n8n independently requires the sidecar's credential
+PASS: sidecar publishes its own resource and Alice's authority
+PASS: the signed introduction required an owner decision before enforcing her terms
+PASS: a signed call spent its grant through the sidecar and ran the pinned n8n workflow
+== 1 · An unauthorized call is challenged ==
+  ok   it answers 401 rather than serving the call
+  ok   the challenge is a UMA challenge
+  ok   it names an authorization server
+  ok   it carries a ticket
+  ok   it points at its metadata document
+== 2 · The metadata document holds up ==
+  ok   the challenge points at the resource's own metadata location
+  ok   a metadata document is published and fetchable
+  ok   it declares the resource it is for
+  ok   and that matches the URL agents actually use
+  ok   it names an authorization server
+  ok   and it is the same one the challenge named
+  ok   and that authorization server says it implements this profile
+== 3 · A grant is not taken on faith ==
+  ok   a made-up bearer token does not get through
+  ok   and neither does one without a proof-of-possession signature
+== 4 · The enforcement point cannot be walked around ==
+  ok   the resource itself refuses a call that did not come through the enforcement point
+15 passed, 0 failed
+PASS: the unchanged upstream integration conformance probe passed
+PASS: withdrawal stopped the established sidecar from using that grant

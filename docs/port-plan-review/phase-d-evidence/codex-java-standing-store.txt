@@ -1,0 +1,4 @@
+store-test against PostgreSQL 17.12
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.357 s -- in io.uma4agents.authserver.store.CodexStandingStoreTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

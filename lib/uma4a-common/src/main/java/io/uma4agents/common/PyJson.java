@@ -18,6 +18,11 @@ import java.util.TreeMap;
  *       Used for {@code params_s256} operation binding by both uma-as and uma-pep.</li>
  *   <li>{@link #compactSorted} — {@code json.dumps(obj, sort_keys=True, separators=(",", ":"))}.
  *       Used for RFC 7638 JWK thumbprints.</li>
+ *   <li>{@link #compactSortedUnicode} — the same with {@code ensure_ascii=False}. Used for
+ *       {@code params_s256} operation binding, {@code authorization_reference} and the
+ *       clearance digest at the pinned upstream.</li>
+ *   <li>{@link #compactOrdered} — {@code json.dumps(obj, separators=(",", ":"))}: insertion
+ *       order, ASCII-escaped. Used for the base64url {@code authorization_remediation}.</li>
  * </ul>
  *
  * Accepts Map / List / String / Boolean / null / Integer / Long / BigInteger /
@@ -27,40 +32,58 @@ public final class PyJson {
 
     private PyJson() {}
 
+    private record Style(String itemSep, String kvSep, boolean sortKeys, boolean ensureAscii) {}
+
+    private static final Style DEFAULT_SORTED = new Style(", ", ": ", true, true);
+    private static final Style COMPACT_SORTED = new Style(",", ":", true, true);
+    private static final Style COMPACT_SORTED_UNICODE = new Style(",", ":", true, false);
+    private static final Style COMPACT_ORDERED = new Style(",", ":", false, true);
+
     public static String dumpsSorted(Object value) {
-        StringBuilder sb = new StringBuilder();
-        write(sb, value, ", ", ": ");
-        return sb.toString();
+        return dumps(value, DEFAULT_SORTED);
     }
 
     public static String compactSorted(Object value) {
+        return dumps(value, COMPACT_SORTED);
+    }
+
+    public static String compactSortedUnicode(Object value) {
+        return dumps(value, COMPACT_SORTED_UNICODE);
+    }
+
+    public static String compactOrdered(Object value) {
+        return dumps(value, COMPACT_ORDERED);
+    }
+
+    private static String dumps(Object value, Style style) {
         StringBuilder sb = new StringBuilder();
-        write(sb, value, ",", ":");
+        write(sb, value, style);
         return sb.toString();
     }
 
-    private static void write(StringBuilder sb, Object value, String itemSep, String kvSep) {
+    private static void write(StringBuilder sb, Object value, Style style) {
         switch (value) {
             case null -> sb.append("null");
-            case JsonNode node -> write(sb, fromNode(node), itemSep, kvSep);
+            case JsonNode node -> write(sb, fromNode(node), style);
             case Boolean b -> sb.append(b ? "true" : "false");
-            case String s -> writeString(sb, s);
+            case String s -> writeString(sb, s, style.ensureAscii());
             case Integer i -> sb.append(i.toString());
             case Long l -> sb.append(l.toString());
             case BigInteger bi -> sb.append(bi.toString());
             case Double d -> sb.append(PyFloatRepr.repr(d));
             case Float f -> sb.append(PyFloatRepr.repr(f.doubleValue()));
             case BigDecimal bd -> writeBigDecimal(sb, bd);
-            case Map<?, ?> map -> writeMap(sb, map, itemSep, kvSep);
-            case List<?> list -> writeList(sb, list, itemSep, kvSep);
+            case Map<?, ?> map -> writeMap(sb, map, style);
+            case List<?> list -> writeList(sb, list, style);
             default -> throw new IllegalArgumentException(
                     "PyJson cannot serialize " + value.getClass().getName()
                             + "; supply Map/List/String/Number/Boolean/null");
         }
     }
 
-    private static void writeMap(StringBuilder sb, Map<?, ?> map, String itemSep, String kvSep) {
-        TreeMap<String, Object> sorted = new TreeMap<>(PyJson::compareCodePoints);
+    private static void writeMap(StringBuilder sb, Map<?, ?> map, Style style) {
+        Map<String, Object> sorted = style.sortKeys()
+                ? new TreeMap<>(PyJson::compareCodePoints) : new java.util.LinkedHashMap<>();
         for (Map.Entry<?, ?> e : map.entrySet()) {
             if (!(e.getKey() instanceof String key)) {
                 throw new IllegalArgumentException(
@@ -72,25 +95,25 @@ public final class PyJson {
         boolean first = true;
         for (Map.Entry<String, Object> e : sorted.entrySet()) {
             if (!first) {
-                sb.append(itemSep);
+                sb.append(style.itemSep());
             }
             first = false;
-            writeString(sb, e.getKey());
-            sb.append(kvSep);
-            write(sb, e.getValue(), itemSep, kvSep);
+            writeString(sb, e.getKey(), style.ensureAscii());
+            sb.append(style.kvSep());
+            write(sb, e.getValue(), style);
         }
         sb.append('}');
     }
 
-    private static void writeList(StringBuilder sb, List<?> list, String itemSep, String kvSep) {
+    private static void writeList(StringBuilder sb, List<?> list, Style style) {
         sb.append('[');
         boolean first = true;
         for (Object item : list) {
             if (!first) {
-                sb.append(itemSep);
+                sb.append(style.itemSep());
             }
             first = false;
-            write(sb, item, itemSep, kvSep);
+            write(sb, item, style);
         }
         sb.append(']');
     }
@@ -103,8 +126,11 @@ public final class PyJson {
         }
     }
 
-    /** Python json.dumps default: ensure_ascii=True — everything above 0x7E escapes. */
-    private static void writeString(StringBuilder sb, String s) {
+    /**
+     * Python json.dumps string encoding. With ensure_ascii everything above 0x7E escapes;
+     * without it only quotes, backslashes and control characters below 0x20 do.
+     */
+    private static void writeString(StringBuilder sb, String s, boolean ensureAscii) {
         sb.append('"');
         int i = 0;
         while (i < s.length()) {
@@ -118,7 +144,7 @@ public final class PyJson {
                 case '\r' -> sb.append("\\r");
                 case '\t' -> sb.append("\\t");
                 default -> {
-                    if (c < 0x20 || c > 0x7E) {
+                    if (c < 0x20 || (ensureAscii && c > 0x7E)) {
                         sb.append(String.format("\\u%04x", (int) c));
                     } else {
                         sb.append(c);

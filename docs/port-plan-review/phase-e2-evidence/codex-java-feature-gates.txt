@@ -1,0 +1,138 @@
+Org and clearance gates on the rebuilt Java authority.
+== an organization's resources, shared with its members ==
+   ok   the organization publishes where to enrol, read the ceiling, ask it and check what it signed
+   ok   the offer says what she would get, not only what she would owe
+   ok   including whose agents would be allowed to act on it
+   ok   and what the organization would be able to do
+   ok   and, in the same breath, what it could never touch
+   ok   standing authority over her agents is not a button press
+   ok   and agreeing is to a version — a join naming none is refused
+   ok   a wrong code discloses nothing
+   ok   an administrator can invite someone by name
+   ok   the invitation is public; the code that answers it is not
+   ok   it appears in her own portal as a decision waiting on her
+   ok   and inviting her has made her a member of nothing
+   ok   both are members — one by code, one by invitation
+   ok   each is given a role, and it is what she joined for
+   ok   alice's authority now protects the firm's book
+   ok   and it is marked as alice's to administer, not to own
+   ok   carol's authority now protects the firm's book
+   ok   and it is marked as carol's to administer, not to own
+   ok   the trade endpoint is not shared — an analyst was not given it
+   ok   and nothing of their own changed
+   ok   their own terms are untouched by joining
+   ok   terms over the firm's book that exceed the ceiling are refused
+   ok   terms inside it are hers to write
+   ok   and the charter's prohibitions are added to them
+   ok   the terms document an agent reads names the organization
+   ok   each operator published its agent's key
+   ok   under first-party-only, somebody else's agent is refused the book
+   ok   and an agent she operates herself is granted it
+   ok   and reads the firm's book, not her own portfolio
+   ok   while the same third-party agent still reaches her own accounts
+   ok   and an organization that cannot be reached does not stop that
+   ok   which are hers, and different
+   ok   an administrator can read the agents that touch its book
+   ok   the organization sees the agent that touched its book
+   ok   and does not see the agent that only touched her own accounts
+   ok   its view of her queue is scoped the same way
+   ok   and so is its view of her record
+   ok   and it never sees what any member's policy says
+   ok   an administrator can shut an agent out of the firm's book
+   ok   and it is out
+   ok   and the console can see that it is out, rather than offering to shut out an agent it already shut out
+   ok   her record says who did it, and that it was not her
+   ok   and that agent's access to her own accounts is untouched
+   ok   an administrator cannot admit an agent she has never met
+   ok   she can, and her answer is the one that admits it
+   ok   she admits a second agent, through her own account
+   ok   an administrator can answer a request waiting on her
+   ok   the grant is recorded against that agent
+   ok   and his approval is NOT recorded as one of hers
+   ok   her record says which of them it was
+   ok   her own credential is not an administration credential
+   ok   nor is the organization's console token, presented directly
+   ok   and an administration path cannot climb out of the admin surface
+   ok   an administrator can change what a member may reach
+   ok   the firm's trade endpoint appears in her authority
+   ok   and a role that permits any agent lets a third party in
+   ok   with nothing restarted and no new deployment
+   ok   a request her own terms would grant is refused for want of a reason
+   ok   an administrator can add rules the settings cannot express
+   ok   a module that does not compile never becomes the charter in force
+   ok   the administrator's own rule refuses what the settings allowed
+   ok   a rule can name the group the member is in
+   ok   and refuses her because of which group she is in
+   ok   the console can see who is in each group
+   ok   an administrator can create a group without editing JSON
+   ok   creating one publishes a charter version rather than editing in place
+   ok   a group cannot grant what the charter does not claim
+   ok   a group with members in it cannot be deleted out from under them
+   ok   nor edited out of the charter, which is the same act by another door
+   ok   an administrator can say which group joiners land in
+   ok   and nobody already enrolled moves
+   ok   an empty group can be removed
+   ok   an administrator can open a break-glass window
+   ok   the member is told before any data moves
+   ok   an agent redeems it by signing with the key it will be bound to
+   ok   its audience is the organization's, not the caller's
+   ok   and its scopes are bounded by the charter
+   ok   the same signed request cannot be redeemed twice
+   ok   the override is honoured at the enforcement point
+   ok   and it is spent — an exception is for one act
+   ok   every stage of it is in her own record
+   ok   an override cannot ask for a scope the charter never allows
+   ok   an override naming no operation is refused — it is for one act
+   ok   and the refusal did not use up the administrator's voucher
+   ok   break-glass cannot reach a resource the charter did not name for it
+   ok   and a redemption whose body was changed after signing is refused
+   ok   an unsigned one is turned away before the charter is consulted
+   ok   tightening the charter re-clamps every member's book terms
+   ok   and leaves her own terms exactly as they were
+   ok   a grant is in hand before she leaves
+   ok   a member can leave from her own portal
+   ok   the firm's book stops being hers to administer
+   ok   her own resources are all still there
+   ok   her terms keep every narrowing — leaving withdraws a ceiling, it does not raise what is under one
+   ok   and an agent asking for the book now gets nowhere
+   ok   nor does a grant it was holding from before still work
+   ok   while another member's access is unaffected
+   ok   an administrator can end a member's membership
+   ok   her authority is told, and stops treating her as a member
+   ok   and her record says the organization ended it
+   ok   nobody declines for her without the code she was given
+   ok   she can decline an invitation
+   ok   and the administrator sees the refusal rather than an open invitation
+   ok   and the organization's charter is put back as it was
+104 passed, 0 failed
+PASS: one resource server, three owners of record. Alice's accounts
+== 1 · an organization states what it must be able to attest ==
+   ok   a requirement that would not evaluate is refused when it is written, not inside every member's grant
+   ok   a well-formed requirement is published
+   ok   and a member is told, in words, that it is asserted about her rather than by her
+== 2 · her terms carry it, and she cannot edit it out ==
+   ok   she joins
+   ok   the firm's book reaches her authority, because she joined
+   ok   she writes her own terms over the firm's book
+   ok   and the organization's requirement is in them, though she never typed it
+   ok   editing it away does not take — the ceiling puts it back
+== 3 · nothing attested, so nothing is granted ==
+   ok   an agent that would otherwise be granted is refused
+   ok   and told which claim is missing, rather than 'denied'
+   ok   her record says why, in the same words she would be shown
+== 4 · the organization vouches, and the same request goes through ==
+   ok   an administrator records what the organization will attest
+   ok   the agent is granted, with nothing about it changed
+   ok   and the call goes through at the resource
+   ok   the grant carries that a clearance was checked, as a digest
+   ok   and does not hand the agent what was attested about her
+   ok   a clearance the agent offers is not a claim this authority takes
+   ok   her record keeps what was vouched for
+== 5 · withdrawn, and access stops without a policy edit ==
+   ok   the next request is refused, and nobody edited a policy
+   ok   her terms are exactly as she left them
+20 passed, 0 failed
+rego: every shared pattern vector matches as the vectors say
+PASS: portal served pinned login, JavaScript and CSS bytes
+PASS: Dana signed in with her Keycloak session and received the pinned portal page
+PASS: the console proxied an admin-only API with Dana's server-side Keycloak session

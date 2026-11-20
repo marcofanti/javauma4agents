@@ -25,7 +25,7 @@ public class Sessions {
      */
     public String currentUser(HttpServletRequest request) {
         if (!"oidc".equals(config.authMode)) {
-            return "alice";
+            return config.owner;
         }
         Map<String, String> session = cookies.read(request);
         if (!oidc.hasTokens(session.get("sid"))) {

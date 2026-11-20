@@ -1,0 +1,18 @@
+make vectors reproduced all four files byte-for-byte
+25f8207ec5548997615932e03078e60b48d35898fe368b7c4514b0c209aa7f93  lib/uma4a-common/src/test/resources/pinned/phase-d-vectors.json
+make vendor-verify: 47 pinned blobs
+PostgreSQL 17.12; mandatory integration tests enabled
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running io.uma4agents.authserver.PhaseDVectorsTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.074 s -- in io.uma4agents.authserver.PhaseDVectorsTest
+[INFO] Tests run: 187, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Repository store gate with Phase D cases
+store-test against PostgreSQL 17.12
+[INFO] Tests run: 114, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

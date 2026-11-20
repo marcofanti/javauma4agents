@@ -1,38 +1,44 @@
 package io.uma4agents.vault;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.modern.McpSchema.CallToolOutcome;
+import io.modelcontextprotocol.modern.McpSchema.Implementation;
+import io.modelcontextprotocol.modern.McpSchema.TextContent;
+import io.modelcontextprotocol.modern.server.McpFeature;
+import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
+import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
+import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
+import io.modelcontextprotocol.modern.server.feature.ToolsPage;
+import io.modelcontextprotocol.modern.server.transport.HttpServletMcpTransport;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
-/** Registers the MCP streamable-http endpoint at /mcp with the three vault tools. */
+/**
+ * The vault's MCP endpoint at /mcp, serving both protocol generations from one tool
+ * implementation: the MCP 2026-07-28 stateless transport ({@code server/discover}, per-
+ * request {@code _meta}, routing headers) used by agents and the gateway, and the legacy
+ * session-based {@code initialize} transport the portal still uses. {@link McpDispatchServlet}
+ * picks one per request.
+ */
 @Configuration
 public class VaultMcpConfig {
 
-    private static final String POSITIONS_SCHEMA = """
-            {"type":"object","properties":{},"required":[]}""";
-    private static final String TRANSACTIONS_SCHEMA = """
-            {"type":"object","properties":{
-              "account":{"type":"string","default":"brokerage-main"}},
-             "required":[]}""";
-    private static final String TRADE_SCHEMA = """
-            {"type":"object","properties":{
-              "symbol":{"type":"string"},
-              "side":{"type":"string"},
-              "quantity":{"type":"integer"}},
-             "required":["symbol","side","quantity"]}""";
+    static final String MODERN_VERSION = "2026-07-28";
 
     @Bean
     public McpJsonMapper mcpJsonMapper(JsonMapper mapper) {
@@ -40,59 +46,113 @@ public class VaultMcpConfig {
     }
 
     @Bean
-    public HttpServletStreamableServerTransportProvider transportProvider(McpJsonMapper jsonMapper) {
-        return HttpServletStreamableServerTransportProvider.builder()
-                .jsonMapper(jsonMapper)
-                .mcpEndpoint("/mcp")
-                .build();
+    public VaultTools vaultTools(Fixtures fixtures) {
+        return new VaultTools(fixtures);
     }
 
     @Bean
-    public ServletRegistrationBean<HttpServletStreamableServerTransportProvider> mcpServlet(
-            HttpServletStreamableServerTransportProvider transportProvider) {
-        return new ServletRegistrationBean<>(transportProvider, "/mcp/*", "/mcp");
+    public ServletRegistrationBean<McpDispatchServlet> mcpServlet(McpJsonMapper jsonMapper,
+                                                                  VaultTools tools,
+                                                                  VaultSettings settings,
+                                                                  ObjectMapper mapper) {
+        HttpServletStreamableServerTransportProvider legacy =
+                HttpServletStreamableServerTransportProvider.builder()
+                        .jsonMapper(jsonMapper).mcpEndpoint("/mcp").build();
+        legacyServer(legacy, tools, mapper, settings.owner);
+        HttpServletMcpTransport modern = HttpServletMcpTransport.builder(
+                modernServer(jsonMapper, tools, settings, mapper)).jsonMapper(jsonMapper)
+                .endpoint("/mcp").build();
+        return new ServletRegistrationBean<>(new McpDispatchServlet(modern, legacy), "/mcp",
+                "/mcp/*");
     }
 
-    @Bean
-    public McpSyncServer mcpServer(HttpServletStreamableServerTransportProvider transportProvider,
-                                   Fixtures fixtures, ObjectMapper mapper) {
-        VaultTools tools = new VaultTools(fixtures, mapper);
-        return McpServer.sync(transportProvider)
-                .serverInfo("alice-vault", "1.0.0")
+    private static io.modelcontextprotocol.modern.server.McpServer modernServer(
+            McpJsonMapper jsonMapper, VaultTools tools, VaultSettings settings,
+            ObjectMapper mapper) {
+        List<McpFeature> features = new ArrayList<>();
+        features.add(ToolsFeature.ofSync(new ModernTools(jsonMapper, tools, mapper)));
+        if (settings.embedded) {
+            features.add(new EnforcementExtension(settings));
+        }
+        return io.modelcontextprotocol.modern.server.McpServer.builder()
+                .serverInfo(Implementation.builder(settings.owner + "-vault", "1.0.0").build())
+                .supportedVersions(List.of(MODERN_VERSION))
+                .jsonMapper(jsonMapper).features(features).build();
+    }
+
+    private static McpSyncServer legacyServer(HttpServletStreamableServerTransportProvider t,
+                                              VaultTools tools, ObjectMapper mapper,
+                                              String owner) {
+        McpJsonMapper schemaMapper = new JacksonMcpJsonMapper(JsonMapper.builder().build());
+        List<SyncToolSpecification> specs = new ArrayList<>();
+        for (VaultTools.Definition d : VaultTools.DEFINITIONS) {
+            specs.add(SyncToolSpecification.builder()
+                    .tool(McpSchema.Tool.builder().name(d.name()).description(d.description())
+                            .inputSchema(schemaMapper, d.inputSchema()).build())
+                    .callHandler((exchange, request) -> legacyResult(mapper,
+                            tools.call(d.name(), request.arguments())))
+                    .build());
+        }
+        return McpServer.sync(t).serverInfo(owner + "-vault", "1.0.0")
                 .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-                .tools(
-                        tool("get_positions",
-                                "Alice's current holdings summary: positions and allocation (read-only).",
-                                POSITIONS_SCHEMA, (exchange, request) ->
-                                        tools.getPositions()),
-                        tool("get_transactions",
-                                "Transaction history and cost basis for one of Alice's accounts.",
-                                TRANSACTIONS_SCHEMA, (exchange, request) ->
-                                        tools.getTransactions(request.arguments())),
-                        tool("execute_trade",
-                                "Execute a trade in Alice's account. (Fixture execution — no market.)",
-                                TRADE_SCHEMA, (exchange, request) ->
-                                        tools.executeTrade(request.arguments())))
+                .tools(specs).build();
+    }
+
+    private static McpSchema.CallToolResult legacyResult(ObjectMapper mapper,
+                                                         VaultTools.Outcome outcome) {
+        if (outcome.error() != null) {
+            return McpSchema.CallToolResult.builder().isError(true)
+                    .content(List.of(new McpSchema.TextContent(outcome.error()))).build();
+        }
+        return McpSchema.CallToolResult.builder()
+                .content(List.of(new McpSchema.TextContent(json(mapper, outcome.value()))))
                 .build();
     }
 
-    private static SyncToolSpecification tool(
-            String name, String description, String schema,
-            java.util.function.BiFunction<Object, McpSchema.CallToolRequest, CallToolResult> handler) {
-        return SyncToolSpecification.builder()
-                .tool(Tool.builder().name(name).description(description).inputSchema(
-                        new JacksonMcpJsonMapper(JsonMapper.builder().build()), schema).build())
-                .callHandler((exchange, request) -> handler.apply(exchange, request))
-                .build();
-    }
-
-    static CallToolResult jsonResult(ObjectMapper mapper, Map<String, Object> value) {
+    static String json(ObjectMapper mapper, Map<String, Object> value) {
         try {
-            return CallToolResult.builder()
-                    .content(List.of(new McpSchema.TextContent(mapper.writeValueAsString(value))))
-                    .build();
-        } catch (tools.jackson.core.JacksonException e) {
+            return mapper.writeValueAsString(value);
+        } catch (JacksonException e) {
             throw new IllegalStateException("unserializable tool result", e);
+        }
+    }
+
+    /** The tool repository for the 2026-07-28 server: the same tools, the same results. */
+    static final class ModernTools implements McpSyncToolRepository {
+        private final Map<String, McpSyncTool> byName = new LinkedHashMap<>();
+
+        ModernTools(McpJsonMapper jsonMapper, VaultTools tools, ObjectMapper mapper) {
+            for (VaultTools.Definition d : VaultTools.DEFINITIONS) {
+                var definition = io.modelcontextprotocol.modern.McpSchema.Tool
+                        .builder(d.name(), jsonMapper, d.inputSchema())
+                        .description(d.description()).build();
+                byName.put(d.name(), McpSyncTool.of(definition, (ctx, request) ->
+                        McpSyncResponse.<CallToolOutcome>result(
+                                modernResult(mapper, tools.call(d.name(), request.arguments())))));
+            }
+        }
+
+        @Override
+        public ToolsPage list(io.modelcontextprotocol.modern.server.McpRequestContext ctx,
+                              String cursor) {
+            return ToolsPage.of(byName.values().stream().map(McpSyncTool::definition).toList());
+        }
+
+        @Override
+        public McpSyncTool find(io.modelcontextprotocol.modern.server.McpRequestContext ctx,
+                                String name) {
+            return byName.get(name);
+        }
+
+        private static CallToolOutcome modernResult(ObjectMapper mapper,
+                                                    VaultTools.Outcome outcome) {
+            var builder = io.modelcontextprotocol.modern.McpSchema.CallToolResult.builder();
+            if (outcome.error() != null) {
+                return builder.isError(true)
+                        .addContent(TextContent.builder(outcome.error()).build()).build();
+            }
+            return builder.addContent(TextContent.builder(json(mapper, outcome.value())).build())
+                    .structuredContent(outcome.value()).build();
         }
     }
 }

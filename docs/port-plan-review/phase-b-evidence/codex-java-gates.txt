@@ -1,0 +1,64 @@
+Codex independent Java aggregate, Phase B candidate
+Exact command: make -j8 check-live FIXTURE_PROJECT=codex-phase-b-java-fixture (exit 0)
+Main Compose: codex-phase-b-java; TLS via localhost:14443. The fixture publishes no host ports.
+
+=== shim-test
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+11 passed, 0 failed
+=== decline-check
+4 passed, 0 failed
+=== demo-acts-a
+==> demo act tier1
+PASS: the requested acts completed
+==> demo act tier2
+PASS: the requested acts completed
+==> demo act tier3
+PASS: the requested acts completed
+==> demo act revocation
+PASS: the requested acts completed
+=== demo-acts-b
+==> demo act tier1 (identified)
+PASS: the requested acts completed
+==> demo act tier2 (identified)
+PASS: the requested acts completed
+==> demo act tier3 (identified)
+PASS: the requested acts completed
+==> demo act revocation (identified)
+PASS: the requested acts completed
+=== flow-check
+   terms: identical in all four
+   grant: identical in all four
+   as_uri: identical in all four
+   a revoked agent gets no fresh token; asking again waits for Bob
+PASS: agent identity stayed on the requesting side.
+=== embedded-check
+PASS: a resource enforced its owner's UMA policy with no gateway
+==> embedded-check: check=0 switch=0 restore=0
+=== smoke-alice
+  trace events: OK (codex-phase-b-java-uma-pep-1)
+=== fixture
+   signed request accepted — 3 tiers, no identity provider involved
+   an unsigned request to the same endpoint: 401
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+
+Separate latest make check-unit (exit 0)
+67 tests, 39 vendored blobs; BUILD SUCCESS
+Named make token-test also exited 0.
+
+Supplemental independent wire probe (exit 0)
+PASS: pseudonymous retained the thumbprint handle and exact grant binding
+PASS: enrolled identity retained the issuer-qualified handle across rotating session keys
+PASS: described retained the thumbprint handle and exact grant binding
+PASS: published retained the thumbprint handle and exact grant binding
+
+After rebuilding the Java shim with the final client library
+shim-test: 8 passed, 0 failed
+shim-spike: 7 passed, 0 failed
+
+After installing the repaired owner-key bootstrap
+PASS: first generation, mode 600, missing-public recovery, idempotence, and directory rejection
+PASS: make up provisions the owner key before Compose
+PASS: the authorization server's mount contains only the public half
+PASS: local-key and OIDC independently reach the same owner policy over main-stack TLS
+PASS: the same endpoint refuses unauthenticated requests

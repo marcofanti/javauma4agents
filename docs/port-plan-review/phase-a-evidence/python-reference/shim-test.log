@@ -1,0 +1,120 @@
+docker compose --profile test run --rm shim-test
+ Image python:3.12-slim Pulling
+ Image python:3.12-slim Pulled
+ Container refstack-shim-test-run-5a81bbc85e46 Creating
+ Container refstack-shim-test-run-5a81bbc85e46 Created
+
+== elicitation-capable client (the Claude Code case) ==
+[agent-shim] proxying https://gateway.uma.lab/mcp (authority gateway.uma.lab); keystore /tmp/shim-key-elicit.pem
+PASS: shim exposes the vault tools
+[agent-shim] challenged by https://alice-as.uma.lab; negotiating
+[agent-shim] beat 0: resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp — AS https://alice-as.uma.lab, 3 tool surfaces
+[agent-shim] challenge corroborated against the resource's published metadata
+[agent-shim] Alice's AS requires terms before get_positions — negotiating
+[agent-shim] presenting ticket at Alice's AS
+[agent-shim] terms proffered: Suitability review for advisory onboarding (expires 172800s, prohibited: retention-after-review, marketing, model-training)
+   [bob-sees-in-his-agent]
+Alice's authorization server dictates these terms for `get_positions`:
+• purpose: Suitability review for advisory onboarding
+• access expires in: 172800s
+• prohibited: retention-after-review, marketing, model-training
+
+Sign this intent contract on your behalf?
+
+[agent-shim] terms approved via elicitation
+[agent-shim] Alice has been asked — holding the ticket
+   [simulated-alice] approving connection fam_n4KrayUewsc
+[agent-shim] grant issued
+[agent-shim] receipt held: /tmp/receipts/fam_n4KrayUewsc.receipt.jws
+PASS: first contact connects, then tier 1 grants
+PASS: terms were rendered inside the agent
+[agent-shim] challenged by https://alice-as.uma.lab; negotiating
+[agent-shim] challenge corroborated against the resource's published metadata
+[agent-shim] Alice's AS requires terms before execute_trade — negotiating
+[agent-shim] presenting ticket at Alice's AS
+[agent-shim] terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   [bob-sees-in-his-agent]
+Alice's authorization server dictates these terms for `execute_trade`:
+• purpose: Execution of one client-approved order
+• access expires in: 900s
+• prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority
+
+Sign this intent contract on your behalf?
+
+[agent-shim] terms approved via elicitation
+[agent-shim] Alice has been asked — holding the ticket
+   [simulated-alice] approving operation fam_66aLKlmKfFg
+[agent-shim] grant issued
+[agent-shim] receipt held: /tmp/receipts/fam_66aLKlmKfFg.receipt.jws
+PASS: tier 3 pends, Alice approves, trade executes
+== client without elicitation (the Claude Desktop case today) ==
+[agent-shim] proxying https://gateway.uma.lab/mcp (authority gateway.uma.lab); keystore /tmp/shim-key-fallback.pem
+[agent-shim] challenged by https://alice-as.uma.lab; negotiating
+[agent-shim] beat 0: resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp — AS https://alice-as.uma.lab, 3 tool surfaces
+[agent-shim] challenge corroborated against the resource's published metadata
+[agent-shim] Alice's AS requires terms before get_transactions — negotiating
+[agent-shim] presenting ticket at Alice's AS
+[agent-shim] terms proffered: Portfolio analysis for the current advisory engagement (expires 86400s, prohibited: client-benchmarking, sharing-outside-engagement-team, retention-after-engagement)
+[agent-shim] elicitation unavailable (MCPError); standing config accepts (max_expires=604800)
+[agent-shim] Accepted Alice's terms under Bob's standing config: Portfolio analysis for the current advisory engagement
+[agent-shim] Alice has been asked — holding the ticket
+   [simulated-alice] approving connection fam_fahB-WrwFW8
+[agent-shim] grant issued
+[agent-shim] receipt held: /tmp/receipts/fam_fahB-WrwFW8.receipt.jws
+PASS: standing-config fallback (no elicitation client)
+== the pend as a rendered wait, not a held-open call ==
+[agent-shim] proxying https://gateway.uma.lab/mcp (authority gateway.uma.lab); keystore /tmp/shim-key-pend.pem
+[agent-shim] challenged by https://alice-as.uma.lab; negotiating
+[agent-shim] beat 0: resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp — AS https://alice-as.uma.lab, 3 tool surfaces
+[agent-shim] challenge corroborated against the resource's published metadata
+[agent-shim] Alice's AS requires terms before get_positions — negotiating
+[agent-shim] presenting ticket at Alice's AS
+[agent-shim] terms proffered: Suitability review for advisory onboarding (expires 172800s, prohibited: retention-after-review, marketing, model-training)
+   [bob-sees-in-his-agent]
+Alice's authorization server dictates these terms for `get_positions`:
+• purpose: Suitability review for advisory onboarding
+• access expires in: 172800s
+• prohibited: retention-after-review, marketing, model-training
+
+Sign this intent contract on your behalf?
+
+[agent-shim] terms approved via elicitation
+[agent-shim] Alice has been asked — holding the ticket
+[agent-shim] Alice has been asked — holding the ticket
+   [bob-sees-in-his-agent]
+`get_positions` is waiting on the resource owner's decision.
+
+• who must decide: the resource owner — not you, and not reachable from this connection
+• where: https://alice-as.uma.lab
+• they have been notified and the request is holding
+
+Keep waiting?
+
+[agent-shim] Alice has been asked — holding the ticket
+   [bob-sees-in-his-agent]
+`get_positions` is waiting on the resource owner's decision.
+
+• who must decide: the resource owner — not you, and not reachable from this connection
+• where: https://alice-as.uma.lab
+• they have been notified and the request is holding
+
+Keep waiting?
+
+[agent-shim] Alice has been asked — holding the ticket
+   [bob-sees-in-his-agent]
+`get_positions` is waiting on the resource owner's decision.
+
+• who must decide: the resource owner — not you, and not reachable from this connection
+• where: https://alice-as.uma.lab
+• they have been notified and the request is holding
+
+Keep waiting?
+
+   [simulated-alice] approving connection fam_1mVviEpU8Vs
+[agent-shim] grant issued
+[agent-shim] receipt held: /tmp/receipts/fam_1mVviEpU8Vs.receipt.jws
+PASS: call completes after the owner decides
+PASS: the wait was handed back to Bob, not held open
+PASS: the pend names a principal Bob is not and cannot reach
+
+shim-test: 8 passed, 0 failed

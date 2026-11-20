@@ -1,0 +1,70 @@
+1. Northwind federates identity in its charter
+   ok   a charter may name the provider its people are asserted by
+   ok   and it has to be an https issuer — it is a trust root
+   ok   switched off with nothing typed in is a charter that never had one
+1b. the provider is the enterprise's, not Meridian's
+   ok   a token from Meridian's own identity provider is not an employee assertion
+2. an employee enrols because the provider says she is one
+   ok   no enrolment code — her employer's directory is the entitlement
+   ok   and one employee's token does not enrol another
+   ok   and Meridian's word about who Northwind employs is worth nothing
+3. the terms over the firm's book are still hers to write
+   ok   she writes them; the charter still only narrows
+4. an agent with no enterprise credentials gets nowhere
+   ok   the server asks who it acts for, and it cannot say
+5. the resource side names the provider; the agent goes and asks
+   ok   an assertion is obtained and the grant is issued
+   ok   the agent was told where to go rather than knowing in advance
+   ok   identity was asked for before terms were dictated
+   ok   and the grant spends at the resource
+6. three ceilings, and each party owns exactly one
+   ok   the provider will not assert a scope no administrator approved
+   ok   and an operation outside the connection never becomes a grant
+6b. a perfect assertion does not override the charter
+   ok   somebody else's agent is refused under a first-party-only role
+   ok   and the refusal comes from the charter, not the provider
+7. an assertion is not an entitlement
+   ok   a well-formed ID-JAG is issued
+   ok   but it is worth nothing without a ticket of her issuing
+7b. and it is spent once
+   ok   the same assertion cannot open a second negotiation
+8. the assertion is bound to one authority and one person
+   ok   an assertion audienced at Carol's authority is issued for Carol's
+   ok   and it is refused at Alice's
+8b. an employee who has not joined yet
+   ok   the firm's book is refused outright — she is not a member of it
+   ok   and no assertion is asked for, because there is nothing to negotiate
+   ok   the refusal names the organization rather than being a dead end
+   ok   and says how membership is come by
+   ok   an ID-JAG for a non-member enrols nobody
+8c. she joins, and the same agent then works
+   ok   signing in at her employer is the whole of the enrolment
+   ok   and only then does the same agent get a grant
+9. the enterprise half stops at the organization's resources
+   ok   her own account never asks for an assertion
+30 passed, 0 failed
+PASS: two protocols, one request. Northwind's provider said which
+  uma-as: OK
+  uma_profiles_supported: OK
+  advertised formats: OK
+  no RReg: OK
+  jwks: OK
+  keycloak: OK
+  resource metadata (alice): OK
+  gateway challenge: OK
+  ext_authz body passthrough: OK
+  truncated body: OK
+  portal: OK
+  agent CIMD: OK
+  signatures directory: OK
+  alice operator CIMD: OK
+  person-server: OK
+  grafana: OK
+  loki events: OK (codex-e4-java-uma-pep-1)
+  trace events: OK (codex-e4-java-uma-pep-1)
+  DNS: OK
+  ID-JAG advertised: OK
+  resource metadata (carol): OK
+  carol portal: OK
+  XAA broker discovery: OK
+  Northwind workforce realm: OK

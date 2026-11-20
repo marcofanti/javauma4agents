@@ -30,12 +30,17 @@ public class AuthController {
     }
 
     @GetMapping("/auth/callback")
-    public ResponseEntity<Void> callback(@RequestParam(required = false) String code,
+    public ResponseEntity<String> callback(@RequestParam(required = false) String code,
                                          @RequestParam(required = false) String state,
                                          HttpServletResponse response) {
         Map<String, String> result = oidc.handleCallback(code, state, callbackUrl());
         if (result == null) {
             return redirect("/login");
+        }
+        if (result.containsKey(OidcService.ANOTHER_ACCOUNT)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .header("Content-Type", "text/html; charset=utf-8")
+                    .body("This portal belongs to another account.");
         }
         Map<String, String> session = new HashMap<>();
         session.put("sid", result.get("sid"));
@@ -58,7 +63,7 @@ public class AuthController {
         return url.replace("http://", "https://");
     }
 
-    private static ResponseEntity<Void> redirect(String location) {
+    private static <T> ResponseEntity<T> redirect(String location) {
         return ResponseEntity.status(HttpStatus.FOUND).header("Location", location).build();
     }
 }

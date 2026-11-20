@@ -1,0 +1,359 @@
+[Excerpt from the original test run]
+Upstream pinned: person-server@18d9558
+==> Alice's device key already exists
+docker compose up -d --build
+ Image claude-phase-d-agent-operator Building
+ Image claude-phase-d-alice-portal Building
+ Image claude-phase-d-alice-operator Building
+ Image claude-phase-d-uma-as Building
+ Image claude-phase-d-person-server Building
+[387 lines omitted]
+=== shim-test
+[4 lines omitted]
+== elicitation-capable client (the Claude Code case) ==
+[2 lines omitted]
+PASS: shim exposes the vault tools
+[19 lines omitted]
+PASS: first contact connects, then tier 1 grants
+PASS: terms were rendered inside the agent
+[18 lines omitted]
+PASS: tier 3 pends, Alice approves, trade executes
+== client without elicitation (the Claude Desktop case today) ==
+[13 lines omitted]
+PASS: standing-config fallback (no elicitation client)
+== the pend as a rendered wait, not a held-open call ==
+[41 lines omitted]
+PASS: call completes after the owner decides
+PASS: the wait was handed back to Bob, not held open
+PASS: the pend names a principal Bob is not and cannot reach
+[1 lines omitted]
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+[15 lines omitted]
+== Beat 1: the challenge ==
+[3 lines omitted]
+== Beat 0: corroborate the authority ==
+[4 lines omitted]
+== Beats 2–4: terms, agreement, the owner, the grant ==
+[8 lines omitted]
+== The call, proof of possession ==
+[4 lines omitted]
+== Declining ==
+[4 lines omitted]
+11 passed, 0 failed
+[1 lines omitted]
+PASS: a second implementation, sharing no code with the first, ran the four beats.
+=== decline-check
+[13 lines omitted]
+4 passed, 0 failed
+=== demo-acts-a
+[12 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+[14 lines omitted]
+PASS: the requested acts completed
+[11 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 2 (midday): transaction history — watch the terms tighten ==
+[13 lines omitted]
+PASS: the requested acts completed
+[11 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+[12 lines omitted]
+== Act 3 interlude: someone replays the grant unsigned ==
+[4 lines omitted]
+== Act 3 epilogue: the same RPT, tried again ==
+[2 lines omitted]
+PASS: the requested acts completed
+[11 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 4 (evening): Alice revokes the agent ==
+[15 lines omitted]
+PASS: the requested acts completed
+=== demo-acts-b
+[9 lines omitted]
+== Prologue: Bob's agent enrolls with his agent server ==
+[5 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+[14 lines omitted]
+PASS: the requested acts completed
+[8 lines omitted]
+== Prologue: Bob's agent enrolls with his agent server ==
+[5 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 2 (midday): transaction history — watch the terms tighten ==
+[13 lines omitted]
+PASS: the requested acts completed
+[8 lines omitted]
+== Prologue: Bob's agent enrolls with his agent server ==
+[5 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+[12 lines omitted]
+== Act 3 interlude: someone replays the grant unsigned ==
+[4 lines omitted]
+== Act 3 epilogue: the same RPT, tried again ==
+[2 lines omitted]
+PASS: the requested acts completed
+[8 lines omitted]
+== Prologue: Bob's agent enrolls with his agent server ==
+[5 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 4 (evening): Alice revokes the agent ==
+[15 lines omitted]
+PASS: the requested acts completed
+=== flow-check
+[9 lines omitted]
+== Alice's side, before anyone asks for anything ==
+[3 lines omitted]
+== pseudonymous: a bare key, no issuer ==
+[3 lines omitted]
+== identified: AAuth token, rotating session key ==
+[4 lines omitted]
+== described: CIMD operator document ==
+[3 lines omitted]
+== published: Web Bot Auth directory ==
+[3 lines omitted]
+== What Alice's side did, across all four ==
+[5 lines omitted]
+== The one thing that moved ==
+[10 lines omitted]
+== Bob withdraws an agent at his person server ==
+[2 lines omitted]
+PASS: agent identity stayed on the requesting side.
+[1 lines omitted]
+=== embedded-check
+[24 lines omitted]
+== Beat 0: the resource advertises that it enforces a grant ==
+[4 lines omitted]
+== Beat 0.5: Alice admits a resource server she has never seen ==
+[2 lines omitted]
+== Beat 1: unauthorized tools/call, straight to the resource ==
+[4 lines omitted]
+== What the in-process host refuses, and how ==
+[6 lines omitted]
+== Beats 2-4: the same negotiation at Alice's AS ==
+[9 lines omitted]
+== The authorized call, enforced in-process ==
+[3 lines omitted]
+== A single-use grant: the forged replay comes first ==
+[11 lines omitted]
+== And a forged signature still fails, in-process ==
+[2 lines omitted]
+PASS: a resource enforced its owner's UMA policy with no gateway
+[20 lines omitted]
+=== smoke-alice
+[2 lines omitted]
+  uma-as: OK
+[1 lines omitted]
+  uma_profiles_supported: OK
+[1 lines omitted]
+  advertised formats: OK
+[1 lines omitted]
+  no RReg: OK
+[1 lines omitted]
+  jwks: OK
+[1 lines omitted]
+  keycloak: OK
+[1 lines omitted]
+  resource metadata (alice): OK
+[1 lines omitted]
+  gateway challenge: OK
+[1 lines omitted]
+  ext_authz body passthrough: OK
+[1 lines omitted]
+  truncated body: OK
+[1 lines omitted]
+  portal: OK
+[1 lines omitted]
+  agent CIMD: OK
+[1 lines omitted]
+  signatures directory: OK
+[1 lines omitted]
+  alice operator CIMD: OK
+[1 lines omitted]
+  person-server: OK
+[1 lines omitted]
+  grafana: OK
+[1 lines omitted]
+  loki events: OK (claude-phase-d-uma-pep-1)
+[1 lines omitted]
+  trace events: OK (claude-phase-d-uma-pep-1)
+=== fixture
+[162 lines omitted]
+== The owner authenticates to her own authority ==
+[3 lines omitted]
+== Beat 0: the resource says who speaks for it ==
+[2 lines omitted]
+== Beat 1: an unauthorized call is refused ==
+[2 lines omitted]
+== Beats 2-4: terms, signature, grant ==
+[9 lines omitted]
+== The authorized call ==
+[2 lines omitted]
+== And the refusals still hold ==
+[3 lines omitted]
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+[1 lines omitted]
+=== rotation-check
+[18 lines omitted]
+== Before the rotation: a grant, kept ==
+[9 lines omitted]
+2 passed, 0 failed
+[18 lines omitted]
+== After the rotation ==
+[11 lines omitted]
+5 passed, 0 failed
+[1 lines omitted]
+PASS: the authority rotated its key and nothing it had issued stopped working.
+[1 lines omitted]
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+=== store-test
+[65 lines omitted]
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in io.uma4agents.authserver.store.PgDsnTest
+[259 lines omitted]
+[INFO] Tests run: 43, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.854 s -- in io.uma4agents.authserver.store.JdbcStoreTest
+[1 lines omitted]
+[INFO] Tests run: 43, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.357 s -- in io.uma4agents.authserver.store.MemoryStoreTest
+[194 lines omitted]
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.016 s -- in io.uma4agents.authserver.store.JdbcReplicaTest
+[1 lines omitted]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.118 s -- in io.uma4agents.authserver.store.SqlTransactionTest
+[3 lines omitted]
+[INFO] Tests run: 114, Failures: 0, Errors: 0, Skipped: 0
+[16 lines omitted]
+[INFO] BUILD SUCCESS
+[4 lines omitted]
+=== intent-check
+[9 lines omitted]
+== The echo is checked field by field ==
+[5 lines omitted]
+== What it says it is for is carried, never judged ==
+[9 lines omitted]
+== A mandate, cited in the shape AAuth already uses ==
+[11 lines omitted]
+== The record answers questions about an agent ==
+[9 lines omitted]
+== Drift, seen from the side that can actually see it ==
+[7 lines omitted]
+== Which of her terms are refused, and which are only promised ==
+[6 lines omitted]
+== One terms document, three representations, one receipt ==
+[4 lines omitted]
+== And policy can read it, naming no agent ==
+[5 lines omitted]
+42 passed, 0 failed
+[1 lines omitted]
+PASS: her terms could not be signed weaker than she wrote them, the
+[4 lines omitted]
+=== assurance-check
+[9 lines omitted]
+== First contact: both are strangers, so both ask ==
+[3 lines omitted]
+== Second request, same tier: assurance decides who is quiet ==
+[4 lines omitted]
+== Standing is per tier, not per agent ==
+[3 lines omitted]
+== Saying so, and having published the key ==
+[7 lines omitted]
+== A lie can only cost the liar friction ==
+[4 lines omitted]
+== A rule may turn a stranger away; none may let one in ==
+[5 lines omitted]
+== Her attention has a depth limit ==
+[3 lines omitted]
+== And a newcomer that can be named still gets in ==
+[3 lines omitted]
+== And the flood does not reach the agent she knows ==
+[2 lines omitted]
+== One action shuts out an operator, not one agent ==
+[9 lines omitted]
+26 passed, 0 failed
+[1 lines omitted]
+PASS: assurance tightened and never widened, standing was per tier,
+[3 lines omitted]
+=== consequence-check
+[9 lines omitted]
+== 1 · the resource says what its own operations leave behind ==
+[5 lines omitted]
+== 2 · her authority holds what the resource published ==
+[3 lines omitted]
+== 3 · what her policy is allowed to do with it ==
+[5 lines omitted]
+== 4 · the rule she writes names no tool ==
+[16 lines omitted]
+22 passed, 0 failed
+=== first-party-check
+[9 lines omitted]
+== Claiming an origin is a decision, and only half of one ==
+[4 lines omitted]
+== The impostor: her origin, a key she never published ==
+[3 lines omitted]
+== Her own agent: claimed origin, and a key she published ==
+[4 lines omitted]
+== The same rule, the same tier, somebody else's agent ==
+[2 lines omitted]
+== Disclaiming takes effect, and takes nothing away ==
+[4 lines omitted]
+== And the rule is hers to write, not the agent's to earn ==
+[3 lines omitted]
+14 passed, 0 failed
+[1 lines omitted]
+PASS: an agent she activated herself ran the same grant as anyone
+[2 lines omitted]
+=== subagent-check
+[9 lines omitted]
+== An agent she has approved, the ordinary way ==
+[6 lines omitted]
+== A worker it spawns, with its own key ==
+[4 lines omitted]
+== What she can say about sub-agents ==
+[5 lines omitted]
+== The ceiling, which is not hers to configure away ==
+[4 lines omitted]
+== Introductions her authority will not act on ==
+[5 lines omitted]
+== Revoking the agent that introduced them ==
+[6 lines omitted]
+22 passed, 0 failed
+[1 lines omitted]
+PASS: sub-agents were admitted without a second first contact,
+[4 lines omitted]
+=== demo-all-sim
+[9 lines omitted]
+== Prologue: Bob's agent enrolls with his agent server ==
+[5 lines omitted]
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+[8 lines omitted]
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+[14 lines omitted]
+== Act 2 (midday): transaction history — watch the terms tighten ==
+[12 lines omitted]
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+[11 lines omitted]
+== Act 3 interlude: someone replays the grant unsigned ==
+[4 lines omitted]
+== Act 3 epilogue: the same RPT, tried again ==
+[2 lines omitted]
+== Act 4 (evening): Alice's own agent, and the same tier ==
+[39 lines omitted]
+== Act 4 (evening): Alice revokes the agent ==
+[7 lines omitted]
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier1/v7 · agreement s256:xlbp5-E7-1K5e2H…
+   agent holds a live grant for the holdings summary
+   [alice] revoked aauth:436e1bed-1d91-419a… — 3 live grant(s) deactivated
+   403: {"error":"access_revoked","error_description":"the resource owner revoked this a
+   revocation is terminal — not an invitation to re-negotiate
+
+PASS: the requested acts completed
+exit 0

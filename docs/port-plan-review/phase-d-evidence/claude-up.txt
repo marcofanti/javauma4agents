@@ -1,0 +1,18 @@
+[Excerpt from the original test run]
+Upstream pinned: person-server@18d9558
+==> Alice's device key already exists
+docker compose up -d --build
+ Image claude-phase-d-agent-operator Building
+ Image claude-phase-d-person-server Building
+ Image claude-phase-d-alice-vault-mcp Building
+ Image claude-phase-d-uma-pep Building
+ Image claude-phase-d-alice-portal Building
+[411 lines omitted]
+ Container claude-phase-d-uma-pep-1 Healthy
+ Container claude-phase-d-agentgateway-1 Starting
+ Container claude-phase-d-agentgateway-1 Started
+ Container claude-phase-d-alice-vault-mcp-1 Started
+ Container claude-phase-d-keycloak-1 Healthy
+ Container claude-phase-d-alice-portal-1 Starting
+ Container claude-phase-d-alice-portal-1 Started
+exit 0

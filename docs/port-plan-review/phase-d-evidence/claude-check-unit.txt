@@ -1,0 +1,84 @@
+[Excerpt from the original test run]
+Vendored tree matches 47 pinned upstream blobs
+mvn -B -ntp verify
+[INFO] Scanning for projects...
+[INFO] Loaded 24552 auto-discovered prefixes for remote repository central (prefixes-central.txt)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] uma4agents (Java)                                                  [pom]
+[42 lines omitted]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.116 s -- in io.uma4agents.common.CompactJwsTest
+[1 lines omitted]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in io.uma4agents.common.PyJsonConformanceTest
+[1 lines omitted]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.099 s -- in io.uma4agents.common.EdDsaInteropTest
+[1 lines omitted]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.040 s -- in io.uma4agents.common.AgentTokensTest
+[1 lines omitted]
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in io.uma4agents.common.HttpSignatureTest
+[3 lines omitted]
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
+[29 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.240 s -- in io.uma4agents.pep.core.AuthorityKeysTest
+[1 lines omitted]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in io.uma4agents.pep.core.EnforcerSettingsTest
+[46 lines omitted]
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in io.uma4agents.pep.core.EnforcerTest
+[3 lines omitted]
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0
+[58 lines omitted]
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in io.uma4agents.portal.PortalConfigTest
+[3 lines omitted]
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[248 lines omitted]
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.265 s -- in io.uma4agents.authserver.GrantLoopTest
+[1 lines omitted]
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in io.uma4agents.authserver.IntrospectionResponseTest
+[1 lines omitted]
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.126 s -- in io.uma4agents.authserver.OwnerAuthTest
+[1 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in io.uma4agents.authserver.AssuranceTest
+[16 lines omitted]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.051 s -- in io.uma4agents.authserver.SigningKeysTest
+[1 lines omitted]
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.085 s -- in io.uma4agents.authserver.PhaseDVectorsTest
+[1 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in io.uma4agents.authserver.AgreedTermsTest
+[18 lines omitted]
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.053 s -- in io.uma4agents.authserver.RegistryPullTest
+[1 lines omitted]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.342 s -- in io.uma4agents.authserver.OwnerRealmKeysTest
+[1 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in io.uma4agents.authserver.ConnectionHandleTest
+[1 lines omitted]
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in io.uma4agents.authserver.store.PgDsnTest
+[1 lines omitted]
+[WARNING] Tests run: 43, Failures: 0, Errors: 0, Skipped: 43, Time elapsed: 0.022 s -- in io.uma4agents.authserver.store.JdbcStoreTest
+[1 lines omitted]
+[INFO] Tests run: 43, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.341 s -- in io.uma4agents.authserver.store.MemoryStoreTest
+[1 lines omitted]
+[WARNING] Tests run: 14, Failures: 0, Errors: 0, Skipped: 14, Time elapsed: 0.005 s -- in io.uma4agents.authserver.store.JdbcReplicaTest
+[1 lines omitted]
+[WARNING] Tests run: 6, Failures: 0, Errors: 0, Skipped: 6, Time elapsed: 0.002 s -- in io.uma4agents.authserver.store.SqlTransactionTest
+[3 lines omitted]
+[INFO] Tests run: 187, Failures: 0, Errors: 0, Skipped: 63
+[63 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.092 s -- in io.uma4agents.operator.OperatorControllerTest
+[3 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[34 lines omitted]
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.845 s -- in io.uma4agents.agent.GrantClientTest
+[1 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in io.uma4agents.agent.AgentKeysTest
+[3 lines omitted]
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[79 lines omitted]
+[INFO] demo-driver ........................................ SUCCESS [  0.029 s]
+[INFO] agent-shim ......................................... SUCCESS [  0.036 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.444 s
+[INFO] Finished at: 2026-11-19T22:49:38-05:00
+[INFO] ------------------------------------------------------------------------

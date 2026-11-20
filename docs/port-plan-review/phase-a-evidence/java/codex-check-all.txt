@@ -1,0 +1,64 @@
+Codex Phase A verification excerpts, 2026-11-19
+Upstream pin: 7764928
+Compose: codex-phase-a-audit, local TLS forwarded to 127.0.0.1:14443.
+Selected gate output only. HTTP payloads and client logs are excluded.
+
+make -j8 check-all (exit 0)
+Vendored tree matches 39 pinned upstream blobs
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+=== shim-test
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+11 passed, 0 failed
+=== decline-check
+4 passed, 0 failed
+=== demo-acts-a
+==> demo act tier1
+PASS: the requested acts completed
+==> demo act tier2
+PASS: the requested acts completed
+==> demo act tier3
+PASS: the requested acts completed
+==> demo act revocation
+PASS: the requested acts completed
+=== embedded-check
+PASS: a resource enforced its owner's UMA policy with no gateway
+==> embedded-check: check=0 switch=0 restore=0
+=== smoke-alice
+  uma-as: OK
+  uma_profiles_supported: OK
+  advertised formats: OK
+  jwks: OK
+  keycloak: OK
+  resource metadata (alice): OK
+  gateway challenge: OK
+  ext_authz body passthrough: OK
+  truncated body: OK
+  portal: OK
+  signatures directory: OK
+  person-server: OK
+  grafana: OK
+  loki events: OK (codex-phase-a-audit-uma-pep-1)
+  trace events: OK (codex-phase-a-audit-uma-pep-1)
+
+make shim-spike and independent pending-queue verification (exit 0)
+   stdio negotiated 2025-11-25; server alice-vault-via-uma; tools capability True
+   http negotiated 2025-11-25
+PASS: http: exactly this run's pend is approved, nothing else
+{"passed": 7, "failed": 0}
+
+Independent pending-queue check before the HTTP spike
+Synthetic outside request still pending: True
+
+Independent pending-queue check after the HTTP spike
+Synthetic outside request still pending: True
+
+Independent make shim-test after the final PYTHONPATH wiring change (exit 0)
+Before: synthetic outside request still pending: True
+shim-test: 8 passed, 0 failed
+After: synthetic outside request still pending: True

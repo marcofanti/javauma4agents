@@ -1,0 +1,4 @@
+Pinned tier write cases checked: 19
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.117 s -- in io.uma4agents.authserver.CodexTierWriteOracleTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

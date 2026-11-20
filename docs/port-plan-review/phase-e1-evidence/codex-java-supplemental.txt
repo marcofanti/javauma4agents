@@ -1,0 +1,26 @@
+Supplemental E1 live checks
+PASS: portal served pinned login, JavaScript and CSS bytes
+PASS: Carol signed in with her Keycloak session and received the pinned portal page
+PASS: authenticated portal proxies the Phase D policy and operator endpoints
+PASS: Carol's portal reaches the authenticated resource-server decision handler
+PASS: embedded vault introduced itself and refused the call while awaiting approval
+PASS: after approval, the embedded vault minted a Carol-scoped UMA ticket
+
+Initial Java gateway topology after healthy Compose startup
+agent-operator Up 9 minutes (healthy)
+agentgateway Up 5 minutes
+alice-operator Up 9 minutes (healthy)
+alice-portal Up 9 minutes (healthy)
+alice-vault-mcp Up 5 minutes (healthy)
+carol-as Up 8 minutes (healthy)
+carol-portal Up 9 minutes (healthy)
+carol-vault-mcp Up 9 minutes (healthy)
+dns Up 9 minutes
+edge Up 9 minutes
+grafana Up 9 minutes
+keycloak Up 9 minutes (healthy)
+loki Up 9 minutes
+person-server Up 9 minutes (healthy)
+promtail Up 9 minutes
+uma-as Up 4 minutes (healthy)
+uma-pep Up 8 minutes (healthy)

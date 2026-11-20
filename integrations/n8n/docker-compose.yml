@@ -1,0 +1,44 @@
+services:
+  u4a-sidecar:
+    build:
+      context: ../..
+      dockerfile: services/uma-pep/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Setting an upstream is what turns this from a gateway callout into a
+      # reverse proxy. Unset, it serves the ext_authz interface instead.
+      UMA_PEP_UPSTREAM: ${UMA_PEP_UPSTREAM:?Set the n8n production MCP URL}
+      UMA_PEP_UPSTREAM_HEADER: ${UMA_PEP_UPSTREAM_HEADER:-X-Sidecar-Auth}
+      UMA_PEP_UPSTREAM_AUTH: ${UMA_PEP_UPSTREAM_AUTH:?Set the workflow header credential}
+      UMA_PEP_UPSTREAM_TIMEOUT_S: "60"
+
+      # The tool surface. Read at startup; a malformed file stops the sidecar
+      # rather than silently protecting the wrong tools.
+      UMA_PEP_TOOLS: /config/tools.json
+
+      UMA_AS_PUBLIC: ${UMA_AS_PUBLIC}
+      UMA_AS_INTERNAL: ${UMA_AS_INTERNAL}
+      UMA_OWNER: ${UMA_OWNER}
+      UMA_REALM: ${UMA_REALM}
+
+      # No client secret. It registers by signing with a key it publishes at
+      # its own origin, and the owner approves it from her portal.
+      UMA_AS_RS_CLIENT_ID: ${UMA_AS_RS_CLIENT_ID}
+      UMA_AS_RS_CLIENT_SECRET: ""
+      UMA_PEP_RS_NAME: ${UMA_PEP_RS_NAME}
+
+      # What agents type. The metadata document claims it, and RFC 9728 has
+      # the client refuse a document naming anything else.
+      UMA_PEP_SCHEME: ${UMA_PEP_SCHEME}
+      UMA_EXPECTED_AUTHORITY: ${UMA_EXPECTED_AUTHORITY}
+    volumes:
+      - ./tools.json:/config/tools.json:ro
+      # The signing key is this resource server's identity. Keep it: a new key
+      # is a new resource server, and the owner would have to authorize it
+      # again.
+      - sidecar-keys:/keys
+    ports:
+      - "127.0.0.1:8443:9002"
+
+volumes:
+  sidecar-keys:

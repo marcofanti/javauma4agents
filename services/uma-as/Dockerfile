@@ -5,6 +5,7 @@ COPY lib lib
 COPY mcp mcp
 COPY services services
 COPY clients clients
+COPY conformance/upstream/services conformance/upstream/services
 RUN --mount=type=cache,target=/root/.m2 mvn -q -pl services/uma-as -am package -DskipTests
 
 FROM eclipse-temurin:26-jre

@@ -1,0 +1,22 @@
+PASS: Alice signed in through the edge and used the organization and joint owner controls
+PASS: Carol used her own portal, session, and resource authority
+PASS: Dana's separate administrative session reached the organization console
+3 passed, 0 failed
+PASS: an unmodified MCP client reached Alice's resources, and her
+PASS: a personal AI answered for the owner on the full stack.
+PASS: the owner's signed fixture approval admitted its named test agent
+PASS: pAI-OS discovered the pinned ability through its loader
+PASS: pAI-OS refused an unfamiliar agent despite tier1 standing consent
+PASS: pAI-OS approved a tier1 operation for the agent the owner already admitted
+PASS: pAI-OS refused an ask-me operation by that same established agent
+PASS: the ability logged one standing decision and two refusals for this run
+PASS: n8n independently requires the sidecar's credential
+PASS: sidecar publishes its own resource and Alice's authority
+PASS: the signed introduction required an owner decision before enforcing her terms
+PASS: a signed call spent its grant through the sidecar and ran the pinned n8n workflow
+15 passed, 0 failed
+PASS: the unchanged upstream integration conformance probe passed
+PASS: withdrawal stopped the established sidecar from using that grant
+PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+PASS: the agent used the grant approved through the Java CLI
+PASS: the same grant stopped working after Java CLI revocation

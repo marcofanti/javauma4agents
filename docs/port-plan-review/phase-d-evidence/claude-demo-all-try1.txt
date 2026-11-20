@@ -1,0 +1,127 @@
+docker compose --profile demo run --rm demo-driver --act all --simulate-alice
+ Container claude-phase-d-demo-driver-run-cdb7a215bb3a Creating
+ Container claude-phase-d-demo-driver-run-cdb7a215bb3a Created
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+
+== Prologue: Bob's agent enrolls with his agent server ==
+   registration pending TC-3N1pObqTmFf-R0x57Cw — awaiting the principal's approval
+   approved at the person server with the principal's credential
+   aa-agent+jwt in hand from https://ps.uma.lab; contracts will carry it
+   operator metadata: https://agent.uma.lab/agent.json
+   key published for discovery: https://agent.uma.lab/.well-known/http-message-signatures-directory
+
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+   resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp (signed: yes)
+   authorization server(s): https://alice-as.uma.lab
+   tool surface: get_positions (scopes positions:read)
+   tool surface: get_transactions (scopes transactions:read)
+   tool surface: execute_trade (scopes trades:execute)
+   note: which resources belong to whom is not in the public document — owner instances live behind the protected owner-resources endpoint
+   MCP session established through the gateway (discovery is open)
+
+== Act 1 (midday): Bob's agent requests Alice's holdings summary ==
+   (first contact: an unconnected agent pends until Alice connects it)
+   challenged: 401 from the gateway, ticket tkt_HOer3J5Stz5x4fsp…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Suitability review for advisory onboarding (expires 172800s, prohibited: retention-after-review, marketing, model-training)
+   [bob-standing-config] terms accepted: purpose='Suitability review for advisory onboarding' expires_in=172800 prohibited=['retention-after-review', 'marketing', 'model-training']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] logged in at her IdP (direct-access grant)
+   [simulated-alice] approving connection request fam_Z1cO030Thm8 from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier1/v7 · agreement s256:JVF7QNVQYk-al8D…
+   data received: {"as_of": "2026-07-06", "positions": [{"symbol": "VTI", "name": "Vanguard Total Stock Market ETF", "quantity": 812, "cost_basis": 178432.1, …
+
+== Act 2 (midday): transaction history — watch the terms tighten ==
+   challenged: 401 from the gateway, ticket tkt_8pmFCjJsM-e68fbz…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Portfolio analysis for the current advisory engagement (expires 86400s, prohibited: client-benchmarking, sharing-outside-engagement-team, retention-after-engagement)
+   [bob-standing-config] terms accepted: purpose='Portfolio analysis for the current advisory engagement' expires_in=86400 prohibited=['client-benchmarking', 'sharing-outside-engagement-team', 'retention-after-engagement']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] approving operation request fam_hypnsTEQr64 from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier2/v7 · agreement s256:c7hqR1bRd7HfVM-…
+   data received: {"account": "brokerage-main", "transactions": [{"account": "brokerage-main", "date": "2026-06-24", "type": "buy", "symbol": "VTI", "quantity…
+
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+   challenged: 401 from the gateway, ticket tkt_LjcoNS4O-B5MZcTO…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   [bob-standing-config] terms accepted: purpose='Execution of one client-approved order' expires_in=900 prohibited=['orders-beyond-approved-parameters', 'discretionary-reuse-of-authority']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] approving operation request fam_URoMsldgB-4 from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier3/v8 · agreement s256:G3P-HLJzbo8DEjf…
+
+== Act 3 interlude: someone replays the grant unsigned ==
+   401: replay rejected — proof-of-possession failed
+   Alice's approval survived the replay — the honest call went through
+   data received: {"status": "executed", "order": {"symbol": "VTI", "side": "sell", "quantity": 40}, "note": "fixture execution \u2014 no real market behind t…
+
+== Act 3 epilogue: the same RPT, tried again ==
+   401: single-use grant is consumed — approval permitted one walk through the door
+
+== Act 4 (evening): Alice's own agent, and the same tier ==
+   RO == RqP. She activated this one; it is still not her.
+   her operator: https://alice-agent.uma.lab/agent.json
+   she claims https://alice-agent.uma.lab as her own
+   no rule yet — tier 3 asks her, about her own agent as well
+   challenged: 401 from the gateway, ticket tkt_gfui_uv2SRkuqd6N…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   [bob-standing-config] terms accepted: purpose='Execution of one client-approved order' expires_in=900 prohibited=['orders-beyond-approved-parameters', 'discretionary-reuse-of-authority']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] approving connection request fam_XEN735_8pqk from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier3/v8 · agreement s256:lYXNPcNZb9iPTJZ…
+   rule added: {"when": ["standing.first_party"], "then": "auto"}
+   challenged: 401 from the gateway, ticket tkt_UlFwLNI24nrPD800…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   [bob-standing-config] terms accepted: purpose='Execution of one client-approved order' expires_in=900 prohibited=['orders-beyond-approved-parameters', 'discretionary-reuse-of-authority']
+   agreement signed, committing
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier3/v9 · agreement s256:1b3RHviRL6MxvPx…
+   granted without asking her — she had already decided
+   data received: {"status": "executed", "order": {"symbol": "VTI", "side": "buy", "quantity": 5}, "note": "fixture execution \u2014 no real market behind thi…
+   the same rule, the same tier — now Bob's agent tries it
+   challenged: 401 from the gateway, ticket tkt_lj5eC9-iK0PmyrSB…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   [bob-standing-config] terms accepted: purpose='Execution of one client-approved order' expires_in=900 prohibited=['orders-beyond-approved-parameters', 'discretionary-reuse-of-authority']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] approving operation request fam_CNxmGXcAKnk from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier3/v9 · agreement s256:_YuH5K-3wB9C1Q9…
+   still asked — the relaxation is about whose agent it is
+   tier 3 restored to its shipped rules
+
+== Act 4 (evening): Alice revokes the agent ==
+   challenged: 401 from the gateway, ticket tkt_JeZhBsxu3j_Nxobs…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Suitability review for advisory onboarding (expires 172800s, prohibited: retention-after-review, marketing, model-training)
+   [bob-standing-config] terms accepted: purpose='Suitability review for advisory onboarding' expires_in=172800 prohibited=['retention-after-review', 'marketing', 'model-training']
+   agreement signed, committing
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier1/v7 · agreement s256:wITE2sioUU_mCKW…
+   agent holds a live grant for the holdings summary
+   [alice] revoked aauth:436e1bed-1d91-419a… — 3 live grant(s) deactivated
+   403: {"error":"access_revoked","error_description":"the resource owner revoked this a
+   revocation is terminal — not an invitation to re-negotiate
+
+PASS: the requested acts completed

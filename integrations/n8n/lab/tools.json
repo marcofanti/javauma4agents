@@ -1,0 +1,4 @@
+{
+  "get_positions": {"resource": "n8n-book/get_positions", "scopes": ["positions:read"], "consequence": "reversible"},
+  "get_transactions": {"resource": "n8n-book/get_transactions", "scopes": ["transactions:read"], "single_use": true}
+}

@@ -12,7 +12,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * request_submitted pending state for Alice's ask-me tier, an owner API for the
  * portal, and one structured log line per protocol event.
  *
- * <p>State is in-memory by design: {@code make reset} rewinds the story.
+ * <p>State lives in an owner-scoped store: in memory by default, where {@code make reset}
+ * rewinds the story, or in Postgres ({@code UMA_AS_STORE=postgres}) shared by replicas.
  */
 @SpringBootApplication
 public class UmaAsApplication {

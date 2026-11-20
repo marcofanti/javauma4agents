@@ -1,0 +1,15 @@
+ownership_can_relax: auto (standing.first_party)
+restriction_beats_relaxation: refuse (request.consequence_at_or_above:irreversible)
+equal_is_not_above: ask ()
+no_history_is_younger: ask (standing.age_below:1d)
+prior_unknown_restriction: refuse (a rule that could not be evaluated)
+prior_unknown_relaxation: ask ()
+undeclared_is_distinct_from_irreversible: ask (request.consequence_unknown)
+unicode_whitespace_is_absent: ask (request.reason_absent)
+ledger_count_is_strictly_greater: auto ()
+ledger_count_can_require_an_ask: ask (standing.calls_above:4)
+attribution_at_threshold_is_enough: auto ()
+pre_lineage_records_ask: ask (standing.lineage_new_at_tier)
+the_tier_itself_is_the_approval_boundary: ask ()
+13 cases, 24 vocabulary entries
+SHA-256 939309f9b87fd118ee5e0391d153594648f46899ac6a966d787a72a221a17cf8

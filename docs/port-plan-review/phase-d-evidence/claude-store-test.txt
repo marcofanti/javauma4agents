@@ -1,0 +1,30 @@
+[Excerpt from the original test run]
+Waiting for postgres (claude-phase-d-store-pg-22553-163911096)..
+store-test against PostgreSQL 17.12
+[INFO] Scanning for projects...
+[INFO] Loaded 24552 auto-discovered prefixes for remote repository central (prefixes-central.txt)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] uma4agents (Java)                                                  [pom]
+[56 lines omitted]
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.040 s -- in io.uma4agents.authserver.store.PgDsnTest
+[259 lines omitted]
+[INFO] Tests run: 43, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.068 s -- in io.uma4agents.authserver.store.JdbcStoreTest
+[1 lines omitted]
+[INFO] Tests run: 43, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.349 s -- in io.uma4agents.authserver.store.MemoryStoreTest
+[194 lines omitted]
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.529 s -- in io.uma4agents.authserver.store.JdbcReplicaTest
+[1 lines omitted]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.121 s -- in io.uma4agents.authserver.store.SqlTransactionTest
+[3 lines omitted]
+[INFO] Tests run: 114, Failures: 0, Errors: 0, Skipped: 0
+[13 lines omitted]
+[INFO] uma4a-common ....................................... SUCCESS [  0.936 s]
+[INFO] uma-as ............................................. SUCCESS [ 10.739 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  11.873 s
+[INFO] Finished at: 2026-11-19T22:49:58-05:00
+[INFO] ------------------------------------------------------------------------

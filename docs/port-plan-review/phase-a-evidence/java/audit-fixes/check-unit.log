@@ -1,0 +1,46 @@
+[Excerpt from the original test run]
+Vendored tree matches 39 pinned upstream blobs
+mvn -B -ntp verify
+[INFO] Scanning for projects...
+[INFO] Loaded 24552 auto-discovered prefixes for remote repository central (prefixes-central.txt)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] uma4agents (Java)                                                  [pom]
+[42 lines omitted]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.125 s -- in io.uma4agents.common.CompactJwsTest
+[1 lines omitted]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in io.uma4agents.common.PyJsonConformanceTest
+[1 lines omitted]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.106 s -- in io.uma4agents.common.EdDsaInteropTest
+[1 lines omitted]
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.018 s -- in io.uma4agents.common.HttpSignatureTest
+[3 lines omitted]
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[29 lines omitted]
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in io.uma4agents.pep.core.EnforcerSettingsTest
+[46 lines omitted]
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.201 s -- in io.uma4agents.pep.core.EnforcerTest
+[3 lines omitted]
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
+[90 lines omitted]
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in io.uma4agents.authserver.IntrospectionResponseTest
+[3 lines omitted]
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[64 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.085 s -- in io.uma4agents.operator.OperatorControllerTest
+[3 lines omitted]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[34 lines omitted]
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.951 s -- in io.uma4agents.agent.GrantClientTest
+[3 lines omitted]
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+[79 lines omitted]
+[INFO] demo-driver ........................................ SUCCESS [  0.037 s]
+[INFO] agent-shim ......................................... SUCCESS [  0.037 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.713 s
+[INFO] Finished at: 2026-11-19T19:49:56-05:00
+[INFO] ------------------------------------------------------------------------

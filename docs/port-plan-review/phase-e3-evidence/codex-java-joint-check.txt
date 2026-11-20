@@ -1,0 +1,53 @@
+-- 1. the mandate is published, and says what it takes --
+   ok   the tally publishes who is entitled to be counted
+   ok   and how many of them it takes
+   ok   in sentences a holder is shown before she agrees
+   ok   the tally says it is not an ordinary authority
+-- 2. joining is agreed to, and nobody is enrolled by naming her --
+   ok   joining without agreeing is refused
+   ok   alice agrees to the mandate
+   ok   carol agrees to the mandate
+-- 3. one document, and it is everybody's terms at once --
+   ok   each holder writes her own terms, at her own authority
+   ok   the agent is offered one folded document
+   ok   with the shortest expiry either holder set
+   ok   only the scopes both of them offer
+   ok   and every prohibition either of them wrote
+   ok   the document says who is behind it and what it takes
+   ok   both holders allowed, so the grant issues
+   ok   and it works
+-- 4. the grant carries the evidence it rests on --
+   ok   the grant names the mandate it was issued under
+   ok   and carries a signed verdict from each holder
+   ok   each signed by that holder's own authority, not the tally's
+-- 5. a tally that manufactures a yes is caught at the door --
+   ok   a grant the tally did not sign is refused
+   ok   nor one the tally did not sign that rewrites who was entitled to be counted
+-- 6. one refusal is enough, and nobody waits for the rest --
+   ok   a holder who declines stops the request
+   ok   and the agent is told, rather than left polling
+-- 7. silence is not consent --
+   ok   a holder who has written no terms cannot be counted
+-- 8. either, when the mandate says either --
+   ok   one holder's refusal does not stop what either may release
+   ok   and the grant rests on the holder who did allow it
+-- 9. holding one account together is not standing anywhere else --
+   ok   a holder cannot read her co-owner's queue
+   ok   her own view names the accounts and who holds them
+   ok   and carries none of her co-owner's terms
+-- 10. no organization reaches what she holds with somebody else --
+   ok   a charter may claim a namespace it does not own
+   ok   but not one written as a wildcard, which would reach anybody's
+   ok   its ceiling does not clamp terms over the joint account
+   ok   it is waiting on her
+   ok   and the organization cannot see it
+   ok   nor answer it
+   ok   a tier cannot mix it with anything else
+-- 11. leaving --
+   ok   a holder who has left is not asked, and cannot be counted
+   ok   her own terms survive leaving
+37 passed, 0 failed
+PASS: one resource, two owners, neither above the other. The terms
+      an agent signed were both of theirs at once, the count was run
+      again at the door from signatures the counting party could not
+      forge, and either of them could stop it.

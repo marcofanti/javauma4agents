@@ -1,0 +1,17 @@
+Pinned adapter control
+3 passed, 0 failed
+PASS: an unmodified MCP client reached Alice's resources, and her
+
+Pinned personal AI binding control, repaired fixture mount
+PASS: a personal AI answered for the owner on the full stack.
+
+Pinned pAI-OS raw checker after key mount correction
+FAIL: the ability did not answer a standing-consent tier: request_denied
+Ability log: configured standing_approval=[tier1]; first contact; cannot-ask; decided approved=false
+
+Pinned pAI-OS with explicit owner-approved connection fixture
+<temp>/javauma4agents-phase-b-python.EWNJQF/codex-f-standing-logs/seed.txt:PASS: the owner's signed fixture approval admitted its named test agent
+<temp>/javauma4agents-phase-b-python.EWNJQF/codex-f-standing-logs/paios-assertions.txt:PASS: runtime logged one standing decision and two refusals
+<temp>/javauma4agents-phase-b-python.EWNJQF/codex-f-standing-logs/verify.txt:PASS: pAI-OS refused an unfamiliar agent despite tier1 standing consent
+<temp>/javauma4agents-phase-b-python.EWNJQF/codex-f-standing-logs/verify.txt:PASS: pAI-OS approved a tier1 operation for the agent the owner already admitted
+<temp>/javauma4agents-phase-b-python.EWNJQF/codex-f-standing-logs/verify.txt:PASS: pAI-OS refused an ask-me operation by that same established agent

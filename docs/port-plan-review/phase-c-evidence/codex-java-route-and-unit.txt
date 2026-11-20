@@ -1,0 +1,21 @@
+/mcp -> 401
+/mcp/ -> 401
+/mcp/alice -> 401
+/mcp/alice/mcp -> 401
+/mcp/unconfigured -> 404 invalid_resource_id
+/mcp/mcp/alice -> 404 invalid_resource_id
+/mcp/shared -> 404 invalid_resource_id
+/mcp/joint -> 404 invalid_resource_id
+/other -> 404 invalid_resource_id
+/owner-resources/alice -> 401 invalid_signature
+/owner-resources/unconfigured -> 404 no such resource
+Edge responds to configured authority and refuses unconfigured Host
+
+Latest unit snapshot
+Vendored tree matches 40 pinned upstream blobs
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 132, Failures: 0, Errors: 0, Skipped: 45
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

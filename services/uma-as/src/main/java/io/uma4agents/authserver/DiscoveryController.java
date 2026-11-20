@@ -1,9 +1,9 @@
 package io.uma4agents.authserver;
 
+import io.uma4agents.authserver.store.OwnerStore;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,18 +22,25 @@ public class DiscoveryController {
 
     private final AsConfig config;
     private final AsState state;
+    private final OwnerStore store;
+    private final SigningKeys keys;
     private final PolicyService policy;
     private final GrantService grants;
 
-    public DiscoveryController(AsConfig config, AsState state, PolicyService policy,
-                               GrantService grants) {
+    public DiscoveryController(AsConfig config, AsState state, OwnerStore store,
+                               SigningKeys keys, PolicyService policy, GrantService grants) {
         this.config = config;
         this.state = state;
+        this.store = store;
+        this.keys = keys;
         this.policy = policy;
         this.grants = grants;
     }
 
-    /** Publishes each tier's current terms at startup (the Python startup hook). */
+    /**
+     * Publishes each tier's current terms at startup (the Python startup hook). Write-once
+     * per version, so a restart over a durable store republishes nothing.
+     */
     @PostConstruct
     public void publishInitialTerms() {
         policy.tiers().forEach((tierId, tier) -> grants.publishTerms(tierId, tier));
@@ -44,31 +51,56 @@ public class DiscoveryController {
         return Map.of("status", "ok", "issuer", config.issuer);
     }
 
+    /** The current signing key and every retired key still listed. */
     @GetMapping("/jwks")
     public Map<String, Object> jwks() {
-        return Map.of("keys", List.of(state.publicJwk));
+        return keys.jwks();
     }
 
-    @GetMapping("/.well-known/uma4agents-configuration")
+    /** Has the declarative pull landed yet? For smoke tests, never for readiness. */
+    @GetMapping("/health/registry")
+    public ResponseEntity<Object> healthRegistry() {
+        int count = state.resources().size();
+        boolean ready = count > 0;
+        return ResponseEntity.status(ready ? 200 : 503).body(Map.of(
+                "status", ready ? "ok" : "pending", "resources", count));
+    }
+
+    /**
+     * Authorization server metadata at UMA 2.0's well-known path and this lab's original
+     * one. Advertises only what the token endpoint accepts and the endpoints that exist in
+     * this phase; organization, joint, ID-JAG and resource-server introduction land later.
+     */
+    @GetMapping({"/.well-known/uma2-configuration", "/.well-known/uma4agents-configuration"})
     public Map<String, Object> discovery() {
         Map<String, Object> doc = new LinkedHashMap<>();
         doc.put("issuer", config.issuer);
         doc.put("token_endpoint", config.issuer + "/token");
+        doc.put("rs_registration_endpoint", config.issuer + "/rs/register");
         doc.put("permission_endpoint", config.issuer + "/perm");
         doc.put("introspection_endpoint", config.issuer + "/introspect");
-        doc.put("resource_registration_endpoint", config.issuer + "/rreg");
+        doc.put("consume_endpoint", config.issuer + "/consume");
         doc.put("jwks_uri", config.issuer + "/jwks");
         doc.put("terms_endpoint", config.issuer + "/terms");
-        doc.put("grant_types_supported", List.of("urn:ietf:params:oauth:grant-type:uma-ticket"));
-        doc.put("claim_token_formats_supported", List.of(AsConfig.AGREEMENT_FORMAT));
+        doc.put("owner_endpoint", config.issuer + "/owner");
+        doc.put("org_notice_endpoint", config.issuer + "/org/notice");
+        doc.put("org_admin_endpoint", config.issuer + "/org/admin");
+        doc.put("joint_quote_endpoint", config.issuer + "/joint/quote");
+        doc.put("joint_verdict_endpoint", config.issuer + "/joint/verdict");
+        doc.put("response_types_supported", List.of());
+        doc.put("grant_types_supported",
+                List.of("urn:ietf:params:oauth:grant-type:uma-ticket", "client_credentials"));
+        doc.put("claim_token_formats_supported", List.of(AsConfig.AGREEMENT_FORMAT, io.uma4agents.common.IdentityTokens.ID_JAG));
+        doc.put("signing_alg_values_supported", List.of("EdDSA"));
+        doc.put("http_message_signature_alg_values_supported", List.of("ed25519"));
+        doc.put("uma_profiles_supported", List.of("https://u4a.ai/spec/core/1.0",
+                "https://u4a.ai/spec/terms/1.0", "https://u4a.ai/spec/fedauthz/1.0"));
         return doc;
     }
 
     @GetMapping("/terms")
     public Map<String, Object> termsIndex() {
-        List<Map<String, Object>> docs = new ArrayList<>(state.termsDocs.values());
-        docs.sort(Comparator.comparing(d -> String.valueOf(d.get("template_id"))));
-        return Map.of("proffered_by", config.issuer, "terms", docs);
+        return Map.of("proffered_by", config.issuer, "terms", store.termsDocs());
     }
 
     @GetMapping("/terms/**")
@@ -77,10 +109,11 @@ public class DiscoveryController {
             @RequestParam(required = false) String format,
             @RequestHeader(value = "accept", required = false) String accept) {
         String templateId = request.getRequestURI().substring("/terms/".length());
-        Map<String, Object> doc = state.termsDocs.get(templateId);
+        Map<String, Object> doc = store.termsDoc(templateId);
         if (doc == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "unknown terms document");
         }
+        doc = annotateEnforced(doc);
         if ("jsonld".equals(format)) {
             return ResponseEntity.ok()
                     .contentType(MediaType.valueOf("application/ld+json"))
@@ -95,17 +128,32 @@ public class DiscoveryController {
         return ResponseEntity.ok(doc);
     }
 
-    /** The plain-language representation IEEE 7012 (4.4.1) requires. */
+    /**
+     * The plain-language representation IEEE 7012 (4.4.1) requires. Every interpolation is
+     * escaped as Python's {@code html.escape}: she authors most of it, and it is a public
+     * URL agents dereference and quote. Prohibitions say which are refused at the door.
+     */
     @SuppressWarnings("unchecked")
     static String termsAsHtml(Map<String, Object> doc) {
-        List<String> prohibitedList = doc.get("prohibited") instanceof List<?> list
-                ? list.stream().map(String::valueOf).toList() : List.of();
-        String prohibited = prohibitedList.stream()
-                .map(p -> "<li>" + p + "</li>").reduce("", String::concat);
+        Map<String, Object> enforced = doc.get("enforced") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m : Map.of();
+        StringBuilder prohibited = new StringBuilder();
+        if (doc.get("prohibited") instanceof List<?> list) {
+            for (Object p : list) {
+                String name = String.valueOf(p);
+                prohibited.append("<li>").append(escape(name)).append(enforced.containsKey(name)
+                        ? " — <b>refused at the door</b> (" + escape(String.valueOf(
+                                enforced.get(name))) + ")"
+                        : " — undertaken, not enforced").append("</li>");
+            }
+        }
         String scopes = doc.get("scope") instanceof List<?> list
-                ? String.join(", ", list.stream().map(String::valueOf).toList()) : "";
-        long expiresIn = doc.get("expires_in") instanceof Number n ? n.longValue() : 0;
-        double hours = Math.round(expiresIn / 3600.0 * 10) / 10.0;
+                ? escape(String.join(", ", list.stream().map(String::valueOf).toList())) : "";
+        java.math.BigDecimal seconds = doc.get("expires_in") instanceof Number n
+                ? new java.math.BigDecimal(n.toString()) : java.math.BigDecimal.ZERO;
+        String hours = io.uma4agents.common.PyJson.compactOrdered(new java.math.BigDecimal(
+                seconds.doubleValue() / 3600).setScale(1, java.math.RoundingMode.HALF_EVEN)
+                .doubleValue());
         return """
                 <!doctype html><html><head><meta charset="utf-8">
                 <title>%s — %s</title>
@@ -121,7 +169,7 @@ public class DiscoveryController {
                 <ul>
                 <li><b>Purpose</b> — access is granted only for: %s.</li>
                 <li><b>What you may access</b> — %s.</li>
-                <li><b>How long</b> — access expires %d seconds
+                <li><b>How long</b> — access expires %s seconds
                     (~%s hours) after grant.</li>
                 <li><b>Prohibited</b> — you agree you will not engage in:<ul>%s</ul></li>
                 <li><b>Anything not expressly permitted here is not permitted.</b></li>
@@ -129,9 +177,34 @@ public class DiscoveryController {
                 <p class="k">Machine-readable: this same URI as <code>application/json</code>,
                 or <code>?format=jsonld</code> for a JSON-LD/ODRL representation.</p>
                 </body></html>""".formatted(
-                doc.get("name"), doc.get("template_id"), doc.get("name"),
-                doc.get("template_id"), doc.get("proffered_by"), doc.get("published_at"),
-                doc.get("purpose"), scopes, expiresIn, hours, prohibited);
+                escape(doc.get("name")), escape(doc.get("template_id")), escape(doc.get("name")),
+                escape(doc.get("template_id")), escape(doc.get("proffered_by")),
+                escape(doc.get("published_at")), escape(doc.get("purpose")), scopes,
+                seconds.toBigInteger(), hours, prohibited);
+    }
+
+    /** Python's {@code html.escape(str(value))}, quotes included. */
+    static String escape(Object value) {
+        String text = value == null ? "None" : String.valueOf(value);
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#x27;");
+    }
+
+    /**
+     * Marks which prohibitions the enforcement point refuses, on read and only while this
+     * version is in force: stored terms never change, and a superseded version must not be
+     * labelled with today's posture.
+     */
+    @SuppressWarnings("unchecked")
+    Map<String, Object> annotateEnforced(Map<String, Object> doc) {
+        Map<String, Object> tier = policy.tiers().get(String.valueOf(doc.get("tier")));
+        if (tier == null || !(tier.get("terms") instanceof Map<?, ?> terms)
+                || !String.valueOf(terms.get("template_id")).equals(doc.get("template_id"))) {
+            return doc;
+        }
+        Map<String, Object> out = new LinkedHashMap<>(doc);
+        out.put("enforced", PolicyService.enforcedProhibitions(tier));
+        return out;
     }
 
     /** JSON-LD/ODRL representation (IEEE 7012 4.4.2, Annex A principle (j)). */

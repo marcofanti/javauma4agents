@@ -32,6 +32,28 @@ public final class CompactJws {
         return input + "." + Jwks.b64url(sig);
     }
 
+    /**
+     * Signs with Ed25519 under the given JOSE name, {@code EdDSA} or {@code Ed25519}: the
+     * one the verifier will read from the signing key ({@link Jose#algOf}).
+     *
+     * @param header protected header members; {@code alg} is set here
+     * @param claims the payload
+     * @param key the Ed25519 private key
+     * @param alg {@code EdDSA} or {@code Ed25519}
+     * @return the compact JWS
+     */
+    public static String signWith(Map<String, Object> header, Map<String, Object> claims,
+                                  PrivateKey key, String alg) {
+        if (!Jose.EDDSA.equals(alg) && !Jose.ED25519.equals(alg)) {
+            throw new IllegalArgumentException("not an Ed25519 JOSE algorithm: " + alg);
+        }
+        Map<String, Object> fullHeader = new java.util.LinkedHashMap<>(header);
+        fullHeader.put("alg", alg);
+        String input = Jwks.b64url(toJson(fullHeader)) + "." + Jwks.b64url(toJson(claims));
+        byte[] sig = EdDsa.sign(key, input.getBytes(StandardCharsets.US_ASCII));
+        return input + "." + Jwks.b64url(sig);
+    }
+
     public static Parsed parse(String compact) {
         String[] parts = compact.split("\\.");
         if (parts.length != 3) {
@@ -54,6 +76,30 @@ public final class CompactJws {
                 parsed.signingInput().getBytes(StandardCharsets.US_ASCII), parsed.signature());
         if (!ok) {
             throw new SecurityException("JWS signature verification failed");
+        }
+        return parsed;
+    }
+
+    /**
+     * Verifies with the algorithm the key names ({@link Jose#algOf}), as PyJWT's
+     * {@code decode(token, key, algorithms=[alg])} does: the header must name exactly
+     * that algorithm, and both {@code EdDSA} and {@code Ed25519} are Ed25519 signatures.
+     *
+     * @param compact the compact JWS
+     * @param key the Ed25519 public key
+     * @param alg the one algorithm allowed, {@code EdDSA} or {@code Ed25519}
+     * @return the parsed token
+     * @throws SecurityException with PyJWT's wording when the alg or signature is wrong
+     */
+    public static Parsed verifyWith(String compact, PublicKey key, String alg) {
+        Parsed parsed = parse(compact);
+        if (!alg.equals(parsed.header().get("alg"))) {
+            throw new SecurityException("The specified alg value is not allowed");
+        }
+        boolean ok = EdDsa.verify(key,
+                parsed.signingInput().getBytes(StandardCharsets.US_ASCII), parsed.signature());
+        if (!ok) {
+            throw new SecurityException("Signature verification failed");
         }
         return parsed;
     }

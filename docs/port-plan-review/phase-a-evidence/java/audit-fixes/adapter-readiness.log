@@ -1,0 +1,4 @@
+docker compose --profile adapter up -d agent-shim
+Waiting for the adapter. ready
+make adapter exit=0
+agent-shim-1  | [agent-shim] listening on 0.0.0.0:9030 (streamable-http)

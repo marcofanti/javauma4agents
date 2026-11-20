@@ -1,0 +1,56 @@
+Main gate command: make -j8 check-live FIXTURE_PROJECT=codex-c-main-fixture (exit 0)
+1:=== shim-test
+83:PASS: shim exposes the vault tools
+103:PASS: first contact connects, then tier 1 grants
+104:PASS: terms were rendered inside the agent
+123:PASS: tier 3 pends, Alice approves, trade executes
+138:PASS: standing-config fallback (no elicitation client)
+181:PASS: call completes after the owner decides
+182:PASS: the wait was handed back to Bob, not held open
+183:PASS: the pend names a principal Bob is not and cannot reach
+185:shim-test: 8 passed, 0 failed
+186:=== ts-agent-check
+234:11 passed, 0 failed
+236:PASS: a second implementation, sharing no code with the first, ran the four beats.
+237:=== decline-check
+251:4 passed, 0 failed
+252:=== demo-acts-a
+289:PASS: the requested acts completed
+321:PASS: the requested acts completed
+363:PASS: the requested acts completed
+400:PASS: the requested acts completed
+401:=== demo-acts-b
+442:PASS: the requested acts completed
+477:PASS: the requested acts completed
+522:PASS: the requested acts completed
+562:PASS: the requested acts completed
+563:=== flow-check
+614:PASS: agent identity stayed on the requesting side.
+616:=== embedded-check
+690:PASS: a resource enforced its owner's UMA policy with no gateway
+711:=== smoke-alice
+732:  truncated body: OK
+744:  loki events: OK (codex-c-main-uma-pep-1)
+746:  trace events: OK (codex-c-main-uma-pep-1)
+747:=== fixture
+969:PASS: no IdP, no database, no gateway, one certificate it made itself — and the
+
+Independent rotation harness with unchanged checker (exit 0)
+41ec77f5519381c195ebca9b41b5da08b71379fb
+31:   ok   a grant is issued and spends
+32:   ok   it carries the current kid
+35:2 passed, 0 failed
+56:   ok   the authority publishes the new key and the retired one
+57:   ok   a grant signed before the rotation still spends
+62:   ok   a grant issued after it carries the new kid
+63:   ok   and spends too
+64:   ok   the resource server accepted a pull signed with the new key
+66:5 passed, 0 failed
+68:PASS: the authority rotated its key and nothing it had issued stopped working.
+76:PASS: restore brought back memory and only uma-as-1
+
+Focused Java hardening snapshot
+250:[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.259 s -- in io.uma4agents.authserver.GrantLoopTest
+269:[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.064 s -- in io.uma4agents.authserver.RegistryPullTest
+273:[INFO] Tests run: 31, Failures: 0, Errors: 0, Skipped: 0
+282:[INFO] BUILD SUCCESS

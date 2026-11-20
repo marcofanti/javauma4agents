@@ -1,0 +1,51 @@
+docker compose --profile test run --rm subagent-check
+ Container claude-phase-d-subagent-check-run-794ceecdd96d Creating
+ Container claude-phase-d-subagent-check-run-794ceecdd96d Created
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+
+== An agent she has approved, the ordinary way ==
+   ok   the operator published the parent's key
+   ok   first contact pends and she admits it
+   ok   she is asked at the transactions tier too, and approves
+   ok   her records show one connection, with no sponsor
+   ok   and a tier she approved in person
+
+== A worker it spawns, with its own key ==
+   ok   it is admitted and gets a grant of its own
+   ok   her records name the agent that introduced it
+   ok   it is a separate connection, not the parent's
+
+== What she can say about sub-agents ==
+   her tier-2 rule: ask once per fleet, not once per agent
+   ok   a second worker goes straight through, and she is not woken
+   her stricter rule: ask me about every sub-agent, every time
+   ok   and then she is asked about a sub-agent again
+
+== The ceiling, which is not hers to configure away ==
+   ok   a tier the lineage never reached still asks her
+   ok   she approves it for the sub-agent
+   ok   what a sub-agent earned reaches the agent that introduced it
+
+== Introductions her authority will not act on ==
+   ok   an introduction naming another agent's key is refused outright
+   ok   a sub-agent cannot sponsor one of its own
+   ok   the other operator published its key
+   ok   an agent from another operator is a stranger again
+
+== Revoking the agent that introduced them ==
+   ok   one action revokes the sub-agents with it
+   ok   every sub-agent is revoked in her records
+   ok   and the grant a revoked sub-agent was already holding stops working
+   ok   and a revoked sub-agent's next call does not go through
+   ok   and cannot be re-introduced by the agent that sponsored it
+
+22 passed, 0 failed
+
+PASS: sub-agents were admitted without a second first contact,
+      negotiated their own grants under their own keys, stayed
+      under a ceiling she did not configure away, and died with
+      the agent that introduced them.
+   (her rules on tier1, tier2, tier3 have been put back as they were)

@@ -1,0 +1,67 @@
+ENFORCEMENT_MODE=embedded docker compose up -d --force-recreate alice-vault-mcp
+ Container refstack-uma-as-1 Running
+ Container refstack-uma-pep-1 Running
+ Container refstack-alice-vault-mcp-1 Recreate
+ Container refstack-alice-vault-mcp-1 Recreated
+ Container refstack-uma-as-1 Waiting
+ Container refstack-uma-as-1 Healthy
+ Container refstack-uma-pep-1 Waiting
+ Container refstack-uma-pep-1 Healthy
+ Container refstack-alice-vault-mcp-1 Starting
+ Container refstack-alice-vault-mcp-1 Started
+Waiting for the vault.
+ Container refstack-embedded-check-run-1712d36b138e Creating
+ Container refstack-embedded-check-run-1712d36b138e Created
+
+
+== Beat 0: the resource advertises that it enforces a grant ==
+   capabilities.extensions names the AS: ['https://alice-as.uma.lab']
+   protocol negotiated: ['2026-07-28']
+   it publishes its own RFC 9728 document, with its tools, and signed
+
+== Beat 0.5: Alice admits a resource server she has never seen ==
+   she has admitted the embedded resource server
+
+== Beat 1: unauthorized tools/call, straight to the resource ==
+   challenged in-band: ticket YWxpY2U~tkt_Gs-9hW…, AS https://alice-as.uma.lab
+   no gateway and no ext_authz service in this path
+   the remediation object names the authorization server and the ticket
+
+== What the in-process host refuses, and how ==
+   a refusal that is not a challenge arrives as -32002
+   a header naming an open method over a body naming a protected one is refused, by the MCP host (-32020)
+   a tools/call with no routing headers on 2026-07-28 is refused, by the MCP host (-32020)
+   a request from an origin the resource does not serve is refused
+   and so are an initialize and a stream GET from it, which no tool-call hook sees
+
+== Beats 2-4: the same negotiation at Alice's AS ==
+   presenting ticket at Alice's AS
+   terms proffered: Suitability review for advisory onboarding (expires 172800s, prohibited: retention-after-review, marketing, model-training)
+   terms proffered: Suitability review for advisory onboarding (expires 172800s)
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] approving connection fam_C47jYB66Gqs
+   grant issued
+   grant issued — proof-of-possession RPT in hand
+
+== The authorized call, enforced in-process ==
+   the call was signed over its body, Content-Digest included, as a real client signs it
+   data received: {"as_of": "2026-07-06", "positions": [{"symbol": "VTI", "name": "Vanguard Total Stock Market ETF", "quantity":…
+
+== A single-use grant: the forged replay comes first ==
+   presenting ticket at Alice's AS
+   terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   terms proffered: Execution of one client-approved order (expires 900s)
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] approving operation fam_brcBpxWnGcU
+   grant issued
+   a forged replay of a single-use grant is refused
+   and the grant is still spendable afterwards
+   and spent, it cannot be spent again
+
+== And a forged signature still fails, in-process ==
+   rejected: proof-of-possession failed: malformed Signature header: Incorrect padd
+
+PASS: a resource enforced its owner's UMA policy with no gateway
+Restoring ENFORCEMENT_MODE=gateway

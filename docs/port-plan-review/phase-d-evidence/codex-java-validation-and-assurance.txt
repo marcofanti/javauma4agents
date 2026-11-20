@@ -1,0 +1,9 @@
+Rule validation against CPython 3.12.12
+Pinned rule-validation cases checked: 205
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in io.uma4agents.authserver.CodexRuleSaveOracleTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Assurance comparison before display fix
+Assurance cases checked: 189
+org.opentest4j.AssertionFailedError: [Verbatim https://person.example/agents operator says it operates this agent (self-asserted), Verbatim https://person.example/agents operator published this agent's signing key as its own] ==> expected: <true> but was: <false>

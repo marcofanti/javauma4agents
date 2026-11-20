@@ -1,0 +1,23 @@
+[('edge', '127.0.0.1', '18443')]
+xaa-check exit 0
+smoke-test exit 0
+30 passed, 0 failed
+PASS: two protocols, one request. Northwind's provider said which
+  DNS: OK
+  uma-as: OK
+  uma_profiles_supported: OK
+  advertised formats: OK
+  jwks: OK
+  keycloak: OK
+  resource metadata (alice): OK
+  resource metadata (carol): OK
+  gateway challenge: OK
+  ext_authz body passthrough: OK
+  truncated body: OK
+  portal: OK
+  carol portal: OK
+  agent CIMD: OK
+  signatures directory: OK
+  person-server: OK
+  grafana: OK
+  loki events: OK

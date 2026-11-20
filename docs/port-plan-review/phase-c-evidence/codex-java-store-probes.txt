@@ -1,0 +1,22 @@
+Independent Java Phase C store-only checks
+PostgreSQL 17.12 (with UMA_AS_TEST_DSN)
+These runs load the Java store classes directly. They precede the end-to-end AS gate.
+
+Java JDBC and memory store probes
+PASS: Java two-pool JDBC races, cross-replica events, and restart/reseed on PostgreSQL 17
+PASS: the Java JDBC store rejects the obsolete schema at startup by name
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.568 s -- in io.uma4agents.authserver.store.CodexJdbcOwnerStoreProbe
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.111 s -- in io.uma4agents.authserver.store.CodexOwnerStoreProbe
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Java PostgreSQL notification recovery probe
+PASS: an existing owner subscription survived a real PostgreSQL listener connection loss
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.598 s -- in io.uma4agents.authserver.store.CodexJdbcEventRecovery
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Independent rerun of the repository gate on PostgreSQL 17.12
+80 tests passed, no failures, errors, or skips.
+Without UMA_AS_TEST_DSN in the optional unit gate: 12 replica cases skipped, no errors.
+Without UMA_AS_TEST_DSN in the required gate: explicit missing-DSN failure, no cleanup error.

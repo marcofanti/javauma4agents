@@ -1,0 +1,4 @@
+injected: docker compose --profile test run --rm embedded-check fails with 7
+==> Restoring ENFORCEMENT_MODE=gateway
+==> embedded-check: check=7 switch=0 restore=0
+script exit=7

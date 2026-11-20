@@ -1,0 +1,27 @@
+Final guarded source, make -j8 check-all (exit 0)
+[INFO] BUILD SUCCESS
+=== shim-test
+shim-test: 8 passed, 0 failed
+=== ts-agent-check
+11 passed, 0 failed
+=== decline-check
+4 passed, 0 failed
+=== demo-acts-a
+=== demo-acts-b
+=== flow-check
+=== embedded-check
+=== smoke-alice
+  truncated body: OK
+  loki events: OK (codex-c-ordered-uma-pep-1)
+  trace events: OK (codex-c-ordered-uma-pep-1)
+=== fixture
+=== rotation-check
+2 passed, 0 failed
+5 passed, 0 failed
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+=== store-test
+[INFO] Tests run: 92, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+PEP container ID and start time unchanged through all eleven gates
+memory
+TLS JWKS published only uma-as-1

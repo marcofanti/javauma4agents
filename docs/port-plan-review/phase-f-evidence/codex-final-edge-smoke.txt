@@ -1,0 +1,24 @@
+  uma-as: OK
+  uma_profiles_supported: OK
+  advertised formats: OK
+  no RReg: OK
+  jwks: OK
+  keycloak: OK
+  resource metadata (alice): OK
+  gateway challenge: OK
+  ext_authz body passthrough: OK
+  truncated body: OK
+  portal: OK
+  agent CIMD: OK
+  signatures directory: OK
+  alice operator CIMD: OK
+  person-server: OK
+  grafana: OK
+  loki events: OK (codex-release-java-uma-pep-1)
+  trace events: OK (codex-release-java-uma-pep-1)
+  DNS: OK
+  ID-JAG advertised: OK
+  resource metadata (carol): OK
+  carol portal: OK
+  XAA broker discovery: OK
+  Northwind workforce realm: OK

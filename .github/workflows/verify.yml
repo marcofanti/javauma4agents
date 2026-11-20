@@ -1,0 +1,43 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The store's integration half needs real Postgres 17, the version the pinned
+    # Compose stack runs; with requirePostgres set, a missing database fails the build.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: u4a
+          POSTGRES_PASSWORD: u4a
+          POSTGRES_DB: u4a
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U u4a -q"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      UMA_AS_TEST_DSN: postgres://u4a:u4a@127.0.0.1:5432/u4a
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78  # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '26'
+          cache: maven
+      - name: Vendored upstream clients match the pin
+        run: scripts/verify-vendored.sh
+      - name: Maven verify, store tests on Postgres included
+        run: mvn -B -ntp verify -Duma.store.requirePostgres=true

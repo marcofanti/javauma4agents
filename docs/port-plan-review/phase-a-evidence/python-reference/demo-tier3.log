@@ -1,0 +1,38 @@
+ Container refstack-demo-driver-run-c87fc2e7e092 Creating
+ Container refstack-demo-driver-run-c87fc2e7e092 Created
+
+   running pseudonymously: the bare agent key is the identity
+   operator metadata: https://agent.uma.lab/agent.json
+   key published for discovery: https://agent.uma.lab/.well-known/http-message-signatures-directory
+
+== Beat 0: the agent discovers the resource's shape (RFC 9728) ==
+   resource metadata at https://gateway.uma.lab/.well-known/oauth-protected-resource/mcp (signed: yes)
+   authorization server(s): https://alice-as.uma.lab
+   tool surface: get_positions (scopes positions:read)
+   tool surface: get_transactions (scopes transactions:read)
+   tool surface: execute_trade (scopes trades:execute)
+   note: which resources belong to whom is not in the public document — owner instances live behind the protected owner-resources endpoint
+   MCP session established through the gateway (discovery is open)
+
+== Act 3 (afternoon): the market moves — Bob's agent proposes a trade ==
+   challenged: 401 from the gateway, ticket YWxpY2U~tkt_2olUL6m3…, AS https://alice-as.uma.lab
+   challenge corroborated: as_uri is among the resource's published authorization servers
+   presenting ticket at Alice's AS
+   terms proffered: Execution of one client-approved order (expires 900s, prohibited: orders-beyond-approved-parameters, discretionary-reuse-of-authority)
+   [bob-standing-config] terms accepted: purpose='Execution of one client-approved order' expires_in=900 prohibited=['orders-beyond-approved-parameters', 'discretionary-reuse-of-authority']
+   agreement signed, committing
+   Alice has been asked — holding the ticket
+   [simulated-alice] logged in at her IdP (direct-access grant)
+   [simulated-alice] approving operation request fam_5JiCMmvfhuM from the couch
+   grant issued
+   receipt held (both sides now have the record): terms https://alice-as.uma.lab/terms/alice/advisor-tier3/v2 · agreement s256:4DsCI2ek6xboKi9…
+
+== Act 3 interlude: someone replays the grant unsigned ==
+   401: replay rejected — proof-of-possession failed
+   Alice's approval survived the replay — the honest call went through
+   data received: {"status": "executed", "order": {"symbol": "VTI", "side": "sell", "quantity": 40}, "note": "fixture execution \u2014 no real market behind t…
+
+== Act 3 epilogue: the same RPT, tried again ==
+   401: single-use grant is consumed — approval permitted one walk through the door
+
+PASS: the requested acts completed

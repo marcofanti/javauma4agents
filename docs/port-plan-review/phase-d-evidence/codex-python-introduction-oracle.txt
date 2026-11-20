@@ -1,0 +1,5 @@
+Pinned Python minted and accepted a deterministic introduction
+Header contains alg, jwk, kid, typ
+Claims contain aud, exp, iat, jti, sub
+TTL 300 s
+SHA-256 of compact JWS 295ad7c459b7ff9bba81453b6ab400aa4250fb7a33cfd5d008f092d7514efd1b

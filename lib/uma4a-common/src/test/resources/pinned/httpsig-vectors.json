@@ -1,0 +1,67 @@
+{
+  "now": 1800000000,
+  "keyid": "agent-vectors",
+  "raw_public_b64url": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+  "cases": [
+    {
+      "name": "required_only",
+      "method": "POST",
+      "authority": "gateway.uma.lab",
+      "path": "/mcp",
+      "authorization": "PoP rpt.value",
+      "signature_input": "sig1=(\"@method\" \"@authority\" \"@path\" \"authorization\");created=1800000000;keyid=\"agent-vectors\";alg=\"ed25519\";nonce=\"fixed-default-nonce\"",
+      "signature": "sig1=:+uaEh1YQ+sxQUI8IhLyv9bQRlfkdgdS8h0qtZ/KNwOYMNmnMelI8W2RIvftkFS3Ljh1LDU2fRMIYhCIZV4qkBA==:",
+      "signature_agent": null,
+      "content_digest": null,
+      "body_b64": null
+    },
+    {
+      "name": "driver_nonce_tag",
+      "method": "POST",
+      "authority": "gateway.uma.lab",
+      "path": "/mcp",
+      "authorization": "PoP rpt.value",
+      "signature_input": "sig1=(\"@method\" \"@authority\" \"@path\" \"authorization\");created=1800000000;keyid=\"agent-vectors\";alg=\"ed25519\";nonce=\"n0nce-fixed\";tag=\"web-bot-auth\"",
+      "signature": "sig1=:675n+GJ4ci8NCYgxSRR3rWaawA9jeAz8jlMpLAo1/6/cOqU9BI1dPNB2ya0daVC7k2HYU9RcjPww0LtaKl3KAA==:",
+      "signature_agent": null,
+      "content_digest": null,
+      "body_b64": null
+    },
+    {
+      "name": "signature_agent",
+      "method": "POST",
+      "authority": "gateway.uma.lab",
+      "path": "/mcp",
+      "authorization": "PoP rpt.value",
+      "signature_input": "sig1=(\"@method\" \"@authority\" \"@path\" \"authorization\" \"signature-agent\");created=1800000000;keyid=\"agent-vectors\";alg=\"ed25519\";nonce=\"n0nce-agent\";tag=\"web-bot-auth\"",
+      "signature": "sig1=:DZQx9z/zLB+h4sB5flTb1tR66LcHZpr3x1IxJ2kRgfeAunE/Awu8cl9KM/Jns74UmuwJdvxiFAIxQz4yKYQ6BQ==:",
+      "signature_agent": "https://agent.uma.lab/.well-known/http-message-signatures-directory",
+      "content_digest": null,
+      "body_b64": null
+    },
+    {
+      "name": "content_digest",
+      "method": "POST",
+      "authority": "gateway.uma.lab",
+      "path": "/mcp",
+      "authorization": "PoP rpt.value",
+      "signature_input": "sig1=(\"@method\" \"@authority\" \"@path\" \"authorization\" \"content-digest\");created=1800000000;keyid=\"agent-vectors\";alg=\"ed25519\";nonce=\"n0nce-digest\"",
+      "signature": "sig1=:dRWatROzUehn/aIMWQo5KngAMaUvl6KB+s/WeXc9khKotIXvZEaq95bzzU50tEXrYW5G6d7jQH90pOoPF3MwDA==:",
+      "signature_agent": null,
+      "content_digest": "sha-256=:ywABle7cMCi+GVkXRnwl2RH+h2ehxG8XbAc6EDy3kHM=:",
+      "body_b64": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjcsIm1ldGhvZCI6InRvb2xzL2NhbGwiLCJwYXJhbXMiOnsibmFtZSI6ImdldF9wb3NpdGlvbnMiLCJhcmd1bWVudHMiOnt9fX0="
+    },
+    {
+      "name": "expires",
+      "method": "POST",
+      "authority": "gateway.uma.lab",
+      "path": "/mcp",
+      "authorization": "PoP rpt.value",
+      "signature_input": "sig1=(\"@method\" \"@authority\" \"@path\" \"authorization\");created=1800000000;expires=1800000030;keyid=\"agent-vectors\";alg=\"ed25519\";nonce=\"n0nce-exp\"",
+      "signature": "sig1=:nu7HXTIYJ8zREUM0BIahDYASdH0w9fQpilsG37KakMMKHJyaJ8uQLrDoZJqWskLh4O7pkNs1EK0apMFar8rhCQ==:",
+      "signature_agent": null,
+      "content_digest": null,
+      "body_b64": null
+    }
+  ]
+}

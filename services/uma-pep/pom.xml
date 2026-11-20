@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>io.uma4agents</groupId>
-      <artifactId>uma4a-common</artifactId>
+      <artifactId>uma4a-pep</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

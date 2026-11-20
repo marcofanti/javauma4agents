@@ -1,0 +1,3 @@
+joint-check exit 0
+37 passed, 0 failed
+PASS: one resource, two owners, neither above the other. The terms

@@ -1,0 +1,46 @@
+Self-provisioned repository store-test
+store-test against PostgreSQL 17.12
+[INFO] Tests run: 85, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Rotation fault injection with all six conflicting environment variables
+
+start-fail
+cleanup postgres
+recreate postgres uma-as-1
+recreate memory uma-as-1
+cleanup postgres
+Restoring the original signing key and the memory store
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+
+check-fail
+cleanup postgres
+recreate postgres uma-as-1
+checker before
+recreate postgres uma-as-2
+checker after
+recreate memory uma-as-1
+cleanup postgres
+Restoring the original signing key and the memory store
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
+
+restore-fail
+cleanup postgres
+recreate postgres uma-as-1
+checker before
+recreate postgres uma-as-2
+checker after
+recreate memory uma-as-1
+cleanup postgres
+Restoring the original signing key and the memory store
+
+baseline
+cleanup postgres
+recreate postgres uma-as-1
+checker before
+recreate postgres uma-as-2
+checker after
+recreate memory uma-as-1
+cleanup postgres
+Restoring the original signing key and the memory store
+Restored: memory store, /keys/uma-as-ed25519.pem as uma-as-1, nothing retired
